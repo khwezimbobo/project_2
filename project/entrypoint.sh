@@ -1,3 +1,3 @@
-#!/bin/ash
+#!/bin/sh
 
 exec "$@"
