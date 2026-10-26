@@ -38,6 +38,8 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
 # ===  Our Customers App    ===
     'customers',
+# ===  Our Packages App    ===
+    'packages',
 ]
 
 MIDDLEWARE = [
