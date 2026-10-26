@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'packages',
 # ===  Our Subscriptions App    ===
     'subscriptions',
+# ===  Our Alerts App    ===
+    'alerts',
 ]
 
 MIDDLEWARE = [
