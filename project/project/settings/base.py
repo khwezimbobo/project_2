@@ -1,12 +1,22 @@
 import os
 from pathlib import Path
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 CELERY_BROKER_URL = os.environ["CELERY_BROKER_URL"]
 CELERY_TIMEZONE = "Africa/Johannesburg"
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
-
+CELERY_BEAT_SCHEDULE = {
+    "check-expiring-subscriptions": {
+        "task": "alerts.tasks.check_expiring_subscriptions",
+        "schedule": crontab(hour=7, minute=0),
+    },
+    "auto-suspend-overdue-subscriptions": {
+        "task": "subscriptions.tasks.auto_suspend_overdue_subscriptions",
+        "schedule": crontab(hour=7, minute=15),
+    },
+}
 """
 Django settings for project project.
 
