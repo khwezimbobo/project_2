@@ -1,0 +1,25 @@
+{% extends 'customers/base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<!-- Landing hero -->
+<section class="p-5 bg-white border rounded-3 text-center">
+    <h1 class="display-6">Welcome to the Customer Management System</h1>
+
+    {# What the visitor sees depends on whether they are logged in. #}
+    {% if user.is_authenticated %}
+        <p class="lead">Hello, {{ user.get_username }}. Manage your customers from here.</p>
+        {% if user.is_agent_or_admin %}
+            <a href="{% url 'customer_list' %}" class="btn btn-primary">View customers</a>
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Dashboard</a>
+        {% else %}
+            <p class="text-muted mb-0">Your account does not have an Agent or Admin role yet.</p>
+        {% endif %}
+    {% else %}
+        {# Customer data is private, so visitors are asked to log in first. #}
+        <p class="lead">Please log in to view and manage customers.</p>
+        <a href="{% url 'login' %}" class="btn btn-primary">Login</a>
+    {% endif %}
+</section>
+{% endblock %}

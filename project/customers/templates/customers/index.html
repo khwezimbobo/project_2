@@ -1,0 +1,94 @@
+{% extends "customers/base.html" %}
+
+{% block title %}Staff Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Dashboard heading -->
+<section class="mb-4">
+    <h1 class="h3">Staff Dashboard</h1>
+
+    <p class="text-muted mb-0">
+        Welcome, {{ request.user.username }}.
+        Here is your dashboard overview.
+    </p>
+</section>
+
+
+<!-- KPI cards: four equal columns on large screens, stacked on phones -->
+<section class="row g-3 mb-4">
+
+    <!-- Total customers -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card shadow-sm kpi-card h-100">
+            <div class="card-body">
+                <h2 class="h6 text-muted">Total Customers</h2>
+                <p class="kpi-value mb-0">{{ total_customers|default:"0" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers added in the last 7 days -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card shadow-sm kpi-card h-100">
+            <div class="card-body">
+                <h2 class="h6 text-muted">New This Week</h2>
+                <p class="kpi-value mb-0">{{ new_this_week|default:"0" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customers added today -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card shadow-sm kpi-card h-100">
+            <div class="card-body">
+                <h2 class="h6 text-muted">New Today</h2>
+                <p class="kpi-value mb-0">{{ new_today|default:"0" }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active agents: only provided to admins and superusers -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card shadow-sm kpi-card h-100">
+            <div class="card-body">
+                <h2 class="h6 text-muted">Active Agents</h2>
+                <p class="kpi-value mb-0">{% if active_agents is None %}&ndash;{% else %}{{ active_agents }}{% endif %}</p>
+            </div>
+        </div>
+    </div>
+
+</section>
+
+
+<!-- Latest customers -->
+<section>
+    <h2 class="h5">Recently added customers</h2>
+
+    {% if recent_customers %}
+        <div class="table-responsive bg-white border rounded">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">Name</th>
+                        <th scope="col">Email</th>
+                        <th scope="col">Added</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in recent_customers %}
+                        <tr>
+                            <td><a href="{% url 'customer_detail' customer.pk %}">{{ customer.full_name }}</a></td>
+                            <td>{{ customer.email }}</td>
+                            <td>{{ customer.created_at|date:"j M Y, H:i" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-secondary">No customers yet.</div>
+    {% endif %}
+</section>
+
+{% endblock %}

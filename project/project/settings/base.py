@@ -5,7 +5,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 CELERY_BROKER_URL = os.environ["CELERY_BROKER_URL"]
 CELERY_TIMEZONE = "Africa/Johannesburg"
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = [h for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h]
 
 """
 Django settings for project project.
@@ -35,7 +35,11 @@ INSTALLED_APPS = [
     
 # ===  Helper App    ===
     'rest_framework',
-    'rest_framework.authtoken',
+    'rest_framework.authtoken',        # harmless to keep; JWT replaces it for the API
+    'rest_framework_simplejwt',        # NEW: JWT login
+    'django_filters',                  # NEW: API filters
+    'corsheaders',                     # NEW: browser access to /api/
+
 # ===  Our Customers App    ===
     'customers',
 ]
@@ -43,6 +47,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',   # NEW: must sit above CommonMiddleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -125,8 +130,76 @@ STATIC_URL = '/static/'
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+EMAIL_BACKEND = os.getenv(
+    'EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend'
+)
+
+
+# ===== Customers app settings (Siseko) =====
+
+# Custom user model with the Admin/Agent role. MUST be set before the first migrate.
+AUTH_USER_MODEL = "customers.User"
+
+# Where @login_required sends anonymous visitors, and where users land after login.
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "customer_list"
+
+# Map Django message levels to Bootstrap alert colours.
+from django.contrib.messages import constants as message_constants  # noqa: E402
+MESSAGE_TAGS = {message_constants.ERROR: "danger"}
+
+# JWT token lifetimes.
+from datetime import timedelta  # noqa: E402
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+# Django REST Framework: JWT auth, locked-down by default, paginated, custom errors.
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "DEFAULT_PAGINATION_CLASS": "customers.pagination.StandardPagination",
+    "PAGE_SIZE": 20,
+    "EXCEPTION_HANDLER": "customers.exceptions.custom_exception_handler",
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {
+        # Anonymous users: 20 requests per hour.
+        "anon": "20/hour",
+
+        # Authenticated users: 1000 requests per day.
+        "user": "1000/day",
+
+        # Scopes used by ScopedRateThrottle in customers/api.py.
+        "customer": "300/hour",
+        "login": "10/minute",
+
+        # Used by SubmissionBurstThrottle (its own rate attribute wins).
+        "customer_submission": "5/minute",
     },
+}
+
+# Login lockout (customers/lockout.py reads these two; login breaks without them).
+LOCKOUT_MAX_ATTEMPTS = int(os.getenv("LOCKOUT_MAX_ATTEMPTS", "5"))
+LOCKOUT_SECONDS = int(os.getenv("LOCKOUT_SECONDS", "900"))
+
+# CORS: only these browser origins may call /api/. Empty list allows none.
+CORS_ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
+CORS_URLS_REGEX = r"^/api/.*$"
+
+# Logging: everything from the customers app goes to `docker compose logs`.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"standard": {"format": "{asctime} {levelname} {name} {message}", "style": "{"}},
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "standard"}},
+    "root": {"handlers": ["console"], "level": "WARNING"},
+    "loggers": {"customers": {"handlers": ["console"], "level": "INFO", "propagate": False}},
 }

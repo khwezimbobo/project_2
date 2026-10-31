@@ -1,0 +1,96 @@
+{% extends 'customers/base.html' %}
+
+{% block title %}Customers{% endblock %}
+
+{% block content %}
+<!-- Page heading with the "Add customer" button -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Customer List</h1>
+    <a href="{% url 'customer_create' %}" class="btn btn-primary">Add customer</a>
+</div>
+
+{# Search form. GET (not POST) so the search appears in the URL and can be bookmarked. #}
+<form method="get" action="{% url 'customer_list' %}" class="row g-2 mb-3" role="search">
+    <div class="col-sm-8 col-md-6">
+        <label for="q" class="visually-hidden">Search customers</label>
+        <input type="search" id="q" name="q" value="{{ q }}" class="form-control"
+               placeholder="Search by name, email or phone">
+    </div>
+    <div class="col-auto">
+        <button type="submit" class="btn btn-secondary">Search</button>
+        {# Only shown while a search is active. #}
+        {% if q %}
+            <a href="{% url 'customer_list' %}" class="btn btn-link">Clear</a>
+        {% endif %}
+    </div>
+</form>
+
+{# paginator.count is the total number of matches across all pages. #}
+<p class="text-muted">
+    {{ page_obj.paginator.count }} customer{{ page_obj.paginator.count|pluralize }}
+    {% if q %}matching "{{ q }}"{% endif %}
+</p>
+
+{% if page_obj %}
+    <!-- table-responsive lets the table scroll sideways on small phones -->
+    <div class="table-responsive bg-white border rounded">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Email</th>
+                    <th scope="col">Phone</th>
+                    {# Admins and superusers see every agent's customers, so they get an Agent column. #}
+                    {% if user.is_superuser or user.role == 'admin' %}
+                        <th scope="col">Agent</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for customer in page_obj %}
+                    <tr>
+                        <td>
+                            {# Links to the detail page (URL name customer_detail). #}
+                            <a href="{% url 'customer_detail' customer.pk %}">{{ customer.full_name }}</a>
+                        </td>
+                        <td>{{ customer.email }}</td>
+                        <td>{{ customer.phone }}</td>
+                        {% if user.is_superuser or user.role == 'admin' %}
+                            <td>{{ customer.assigned_agent.username }}</td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# Pagination: only shown when there is more than one page (20 per page). #}
+    {% if page_obj.has_other_pages %}
+        <nav aria-label="Customer pages" class="mt-3">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                    {# |urlencode keeps special characters in the search safe and carries the search to the next page. #}
+                    <li class="page-item">
+                        <a class="page-link" href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}">Previous</a>
+                    </li>
+                {% endif %}
+
+                <li class="page-item disabled">
+                    <span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                </li>
+
+                {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}">Next</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+{% else %}
+    {# Empty state: no customers yet, or the search found nothing. #}
+    <div class="alert alert-secondary">
+        {% if q %}No customers match your search.{% else %}You have no customers yet.{% endif %}
+    </div>
+{% endif %}
+{% endblock %}

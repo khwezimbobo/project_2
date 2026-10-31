@@ -17,7 +17,9 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import include, path
 
-urlpatterns = [
+urlpatterns = [ 
     path('admin/', admin.site.urls),
-    path('customers/', include('customers.urls')),
+    
+    # Every page and API route of the customers app, including /dashboard/.
+    path("customers/", include("customers.urls")),
 ]

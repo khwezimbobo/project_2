@@ -1,0 +1,41 @@
+/* Project styles that sit on top of Bootstrap 5. */
+
+/* ---------- Accessibility: skip link ---------- */
+/* Hidden until a keyboard user tabs to it. */
+.skip-link {
+    position: absolute;
+    left: -999px;
+    top: 0;
+    z-index: 2000;
+    padding: 0.5rem 1rem;
+    background: #0d6efd;
+    color: #fff;
+}
+
+.skip-link:focus {
+    left: 0;
+}
+
+/* ---------- Layout ---------- */
+main:focus {
+    outline: none;
+}
+
+/* ---------- Login and logout cards ---------- */
+.auth-card {
+    max-width: 420px;
+    margin: 3rem auto;
+}
+
+/* ---------- Dashboard KPI cards ---------- */
+.kpi-card .kpi-value {
+    font-size: 2.25rem;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+/* ---------- Customer detail list ---------- */
+.detail-list dt {
+    color: #6c757d;
+    font-weight: 500;
+}
