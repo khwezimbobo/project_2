@@ -33,7 +33,6 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
 
 # Emails are captured in memory so the password-reset test can read them.
-EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
-
+EMAILERS = {"default": {"BACKEND": "django.core.mail.backends.locmem.EmailBackend"}}
 # Celery tasks run immediately instead of waiting for a worker.
 CELERY_TASK_ALWAYS_EAGER = True

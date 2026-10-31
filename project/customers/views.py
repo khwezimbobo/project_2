@@ -150,6 +150,7 @@ def login_view(request):
         if lockout.is_locked(request, username):
             logger.warning("Web login refused (locked) for username '%s'.", username)
             form = BootstrapAuthenticationForm(request)
+            form.cleaned_data = {}
             form.add_error(None, lockout.lockout_message())
             return render(
                 request,

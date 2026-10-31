@@ -62,7 +62,7 @@ class CustomerForm(forms.ModelForm):
             # New customers belong to whoever creates them, matching the
             # API's perform_create and the admin's save_model. Existing
             # customers keep their current agent.
-            if user is not None and self.instance.pk is None:
+            if user is not None and self.instance._state.adding:
                 self.instance.assigned_agent = user
 
     def clean_first_name(self):
