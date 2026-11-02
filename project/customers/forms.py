@@ -4,7 +4,7 @@ from django.contrib.auth.forms import AuthenticationForm
 
 from .models import Customer
 from .permissions import can_view_all
-from .validation import validate_unique_email
+from .serializers import validate_unique_email
 
 User = get_user_model()
 

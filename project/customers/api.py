@@ -1,7 +1,7 @@
 import logging
 
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import viewsets
+
 from rest_framework.exceptions import APIException
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.throttling import ScopedRateThrottle
@@ -54,50 +54,4 @@ class LoginView(TokenObtainPairView):
         return response
 
 
-# ----------------------------------------------------------------------
-# REST API
-# ----------------------------------------------------------------------
-class CustomerViewSet(viewsets.ModelViewSet):
 
-    serializer_class = CustomerSerializer
-
-    # Only authenticated Agents/Admins; object permission enforces ownership.
-    permission_classes = [IsAuthenticatedAndAgent]
-
-    # Filtering (?agent=), searching (?search=) and ordering (?ordering=).
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_class = CustomerFilter
-    search_fields = [
-        "first_name", "last_name", "email", "phone", "assigned_agent__username",
-    ]
-    ordering_fields = ["first_name", "last_name", "email", "created_at"]
-    ordering = ["last_name", "first_name"]   # default order; pagination needs a stable order
-
-    # General per-scope limit plus the 5-POSTs-per-minute burst limit.
-    throttle_classes = [ScopedRateThrottle, SubmissionBurstThrottle]
-    throttle_scope = "customer"
-
-    def get_queryset(self):
-        # Used when API documentation tools inspect the view without a real user.
-        if getattr(self, "swagger_fake_view", False):
-            return Customer.objects.none()
-
-        # LIST: each agent only receives their own customers (admins get all).
-        if self.action == "list":
-            return customers_for(self.request.user)
-
-        # DETAIL actions search every customer so that a record owned by
-        # another agent is found and then refused with 403 by
-        # IsAuthenticatedAndAgent.has_object_permission.
-        return Customer.objects.select_related("assigned_agent")
-
-    def perform_create(self, serializer):
-        # New customers are assigned to whoever creates them.
-        customer = serializer.save(assigned_agent=self.request.user)
-        logger.info(
-            "Customer %s created by user id %s.", customer.pk, self.request.user.pk
-        )
-
-    def perform_destroy(self, instance):
-        logger.info("Customer %s deleted by user id %s.", instance.pk, self.request.user.pk)
-        instance.delete()

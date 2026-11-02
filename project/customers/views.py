@@ -1,3 +1,6 @@
+# --------------------------------------------------
+# IMPORTS
+# --------------------------------------------------
 import logging
 
 from django.contrib import messages
@@ -9,10 +12,17 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
+from rest_framework import viewsets
+from rest_framework.filters import OrderingFilter, SearchFilter
+
 from . import lockout
 from .forms import BootstrapAuthenticationForm, CustomerForm
 from .models import Customer
-from .permissions import agent_or_admin_required, customers_for, owns
+from .permissions import IsAuthenticatedAndAgent, agent_or_admin_required, customers_for, owns
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.throttling import ScopedRateThrottle
+
+from .serializers import CustomerSerializer, RoleTokenObtainPairSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +54,7 @@ def _get_customer_or_403(request, pk):
         )
         raise PermissionDenied("You do not have access to this customer.")
 
-    return customer
+    return f"First and last time together, used in templates."
 
 
 # ----------------------------------------------------------------------
@@ -186,3 +196,61 @@ def logout_view(request):
     # Ends the session and deletes its data on the server.
     logout(request)
     return render(request, "customers/logout.html")
+
+# ----------------------------------------------------------------------
+# REST API
+# ----------------------------------------------------------------------
+class CustomerViewSet(viewsets.ModelViewSet):
+
+    serializer_class = CustomerSerializer
+
+    # Only authenticated Agents/Admins; object permission enforces ownership.
+    permission_classes = [IsAuthenticatedAndAgent]
+
+    # Filtering (?agent=), searching (?search=) and ordering (?ordering=).
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = CustomerFilter
+    search_fields = [
+        "first_name", "last_name", "email", "phone", "assigned_agent__username",
+    ]
+    ordering_fields = ["first_name", "last_name", "email", "created_at"]
+    ordering = ["last_name", "first_name"]   # default order; pagination needs a stable order
+
+    # General per-scope limit plus the 5-POSTs-per-minute burst limit.
+    throttle_classes = [ScopedRateThrottle, SubmissionBurstThrottle]
+    throttle_scope = "customer"
+
+    def get_queryset(self):
+        # Used when API documentation tools inspect the view without a real user.
+        if getattr(self, "swagger_fake_view", False):
+            return Customer.objects.none()
+
+        # LIST: each agent only receives their own customers (admins get all).
+        if self.action == "list":
+            return customers_for(self.request.user)
+
+        # DETAIL actions search every customer so that a record owned by
+        # another agent is found and then refused with 403 by
+        # IsAuthenticatedAndAgent.has_object_permission.
+        return Customer.objects.select_related("assigned_agent")
+
+    def perform_create(self, serializer):
+        # New customers are assigned to whoever creates them.
+        customer = serializer.save(assigned_agent=self.request.user)
+        logger.info(
+            "Customer %s created by user id %s.", customer.pk, self.request.user.pk
+        )
+
+    def perform_destroy(self, instance):
+        logger.info("Customer %s deleted by user id %s.", instance.pk, self.request.user.pk)
+        instance.delete()
+        
+# --------------------------------------------------
+# API PAGINATION
+# --------------------------------------------------
+class StandardPagination(PageNumberPagination):
+    """20 results per page; clients may ask for fewer or more with ?page_size=."""
+
+    page_size = 20
+    page_size_query_param = "page_size"
+    max_page_size = 100

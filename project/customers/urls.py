@@ -118,26 +118,6 @@ urlpatterns = [
 
 
     # ==================================================================
-    # 3. STAFF DASHBOARD
-    # ==================================================================
-
-    # Dashboard: KPI cards (total, new this week, new today, active agents)
-    # and the five newest customers. Requires login, staff access and the
-    # Agent or Admin role; anyone else gets 403. Agents see only their own
-    # numbers, admins see everything.
-    path("dashboard/", dashboard.dashboard, name="dashboard"),
-
-
-    # ==================================================================
-    # 4. HEALTH CHECK (public; used by Docker and monitoring)
-    # ==================================================================
-
-    # Health check: no login needed. Returns 200 {"status": "ok"} when the
-    # app and database respond, or 503 when the database is unreachable.
-    path("health/", health.health, name="health"),
-
-
-    # ==================================================================
     # 5. REST API: JWT LOGIN AND REFRESH
     # ==================================================================
     # API clients log in once, then send the access token on every request:

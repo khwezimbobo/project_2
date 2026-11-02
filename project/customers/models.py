@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from .validation import validate_phone_number
+from .serializers import validate_phone_number
 
 
 # ==================================================
@@ -82,7 +82,7 @@ class Customer(models.Model):
         # Stable default ordering keeps pagination consistent.
         ordering = ["last_name", "first_name"]
 
-    @property
+    @property # Allows access to the method like an attribute, without using parenthesis ()
     def full_name(self):
         """First and last name together, used in templates."""
         return f"{self.first_name} {self.last_name}".strip()
