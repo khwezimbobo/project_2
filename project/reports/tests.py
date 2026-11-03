@@ -5,9 +5,8 @@ import re
 from datetime import date, timedelta
 from decimal import Decimal
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.core.management import call_command
-from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -32,7 +31,8 @@ class ReportsTestBase(TestCase):
         cls.today = timezone.localdate()
         cls.agent1 = User.objects.create_user("agent1", password="pw")
         cls.agent2 = User.objects.create_user("agent2", password="pw")
-        cls.boss = User.objects.create_user("boss", password="pw", is_staff=True)
+        cls.boss = User.objects.create_user("boss", password="pw")
+        cls.boss.groups.add(Group.objects.get_or_create(name="Admin")[0])
         cls.cust1 = cls.make_customer("one@x.co", cls.agent1)
         cls.cust2 = cls.make_customer("two@x.co", cls.agent2)
         cls.twelve = ContractTerm.objects.get(name="12-Month")
@@ -51,7 +51,7 @@ class ReportsTestBase(TestCase):
             package=Package.objects.get(name=package_name),
             contract_term=cls.twelve,
             add_ons=add_ons,
-            start_date=date(2026, 1, 1),
+            installation_date=date(2026, 1, 1),
             created_by=cls.boss,
         )
         Subscription.objects.filter(pk=sub.pk).update(

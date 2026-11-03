@@ -3,7 +3,7 @@
 # out in the SQL text. Never build SQL by formatting or joining strings.
 from django.db import connection
 
-from subscriptions.models import Subscription
+from subscriptions import SubscriptionStatus
 
 REVENUE_BY_PACKAGE_SQL = """
     SELECT p.name AS package,
@@ -18,7 +18,7 @@ REVENUE_BY_PACKAGE_SQL = """
 """
 
 
-def revenue_by_package(status=Subscription.Status.ACTIVE):
+def revenue_by_package(status=SubscriptionStatus.ACTIVE):
     """Monthly revenue and subscription count per package, for subscriptions with this status.
 
     Packages with no matching subscriptions are listed with zero.

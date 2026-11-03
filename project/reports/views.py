@@ -5,10 +5,11 @@ from django.contrib.auth.mixins import UserPassesTestMixin
 from django.views.generic import TemplateView
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics
-from rest_framework.permissions import IsAdminUser, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .permissions import IsAdminGroup
 from .queries import revenue_by_package
 from .serializers import (
     ExpiringSubscriptionSerializer,
@@ -24,7 +25,7 @@ class StaffRequiredMixin(UserPassesTestMixin):
 
     def test_func(self):
         user = self.request.user
-        return user.is_active and user.is_staff
+        return user.is_active and user.is_superuser
 
 
 class DashboardView(StaffRequiredMixin, TemplateView):
@@ -40,7 +41,7 @@ class DashboardView(StaffRequiredMixin, TemplateView):
 class RevenueSummaryView(APIView):
     """GET /api/reports/revenue-summary/ (Admin): active monthly revenue per package, raw SQL."""
 
-    permission_classes = [IsAuthenticated, IsAdminUser]
+    permission_classes = [IsAuthenticated, IsAdminGroup]
 
     @extend_schema(
         tags=["Reports"],
@@ -79,6 +80,6 @@ class ExpiringReportView(generics.ListAPIView):
 
     def get_queryset(self):
         queryset = expiring_subscriptions()
-        if not self.request.user.is_staff:
+        if not self.request.user.is_superuser and not self.request.user.groups.filter(name="Admin").exists():
             queryset = queryset.filter(customer__agent=self.request.user)
         return queryset

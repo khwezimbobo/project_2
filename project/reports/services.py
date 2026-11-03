@@ -6,10 +6,9 @@ from django.db.models import Sum
 from django.utils import timezone
 
 from alerts.models import RenewalAlert
-from subscriptions.models import Subscription
+from subscriptions.models import SubscriptionStatus
 
 EXPIRY_WINDOW_DAYS = 30
-
 
 def expiring_subscriptions(today=None):
     """Active subscriptions ending within the next 30 days, soonest first.
@@ -19,8 +18,8 @@ def expiring_subscriptions(today=None):
     """
     today = today or timezone.localdate()
     return (
-        Subscription.objects.filter(
-            status=Subscription.Status.ACTIVE,
+        SubscriptionStatus.objects.filter(
+            status=SubscriptionStatus.ACTIVE,
             contract_end_date__lte=today + timedelta(days=EXPIRY_WINDOW_DAYS),
         )
         .select_related("customer", "package", "contract_term")
@@ -31,7 +30,7 @@ def expiring_subscriptions(today=None):
 def get_dashboard_data(today=None):
     """Everything the staff dashboard shows, calculated with ORM aggregates."""
     today = today or timezone.localdate()
-    active = Subscription.objects.filter(status=Subscription.Status.ACTIVE)
+    active = SubscriptionStatus.objects.filter(status=SubscriptionStatus.ACTIVE)
 
     monthly_revenue = active.aggregate(total=Sum("monthly_total"))["total"] or Decimal("0.00")
 
