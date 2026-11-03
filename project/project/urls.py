@@ -16,9 +16,15 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('customers/', include('customers.urls')),
-    path('api/', include('packages.urls')),   # Packages API route
+    path('accounts/', include('django.contrib.auth.urls')),  # login/logout/password management
+    path('dashboard/', include('reports.urls')),
+    path('api/', include('api.urls')),   # API routes
+    path('', RedirectView.as_view(pattern_name='dashboard', permanent=False)),  # redirect root to dashboard
 ]
+
+handler404 = 'api.exceptions.json_not_found'
+handler500 = 'api.exceptions.json_server_error'
