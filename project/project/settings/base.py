@@ -1,12 +1,22 @@
 import os
 from pathlib import Path
+from celery.schedules import crontab, timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 CELERY_BROKER_URL = os.environ["CELERY_BROKER_URL"]
 CELERY_TIMEZONE = "Africa/Johannesburg"
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
-
+CELERY_BEAT_SCHEDULE = {
+    "check-expiring-subscriptions": {
+        "task": "alerts.tasks.check_expiring_subscriptions",
+        "schedule": crontab(hour=7, minute=0),
+    },
+    "auto-suspend-overdue-subscriptions": {
+        "task": "subscriptions.tasks.auto_suspend_overdue_subscriptions",
+        "schedule": crontab(hour=7, minute=15),
+    },
+}
 """
 Django settings for project project.
 
@@ -32,7 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
+# ===  OpenAPI schema generation and Swagger UI   ===
+    'drf_spectacular',
 # ===  Helper App    ===
     'rest_framework',
     'rest_framework.authtoken',
@@ -47,6 +58,35 @@ INSTALLED_APPS = [
 # ===  Our Reports App    ===
     'reports',
 ]
+
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER':'api.exceptions.custom_exception_handler',
+    'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_SCHEMA_CLASS':'drf_spectacular.openapi.AutoSchema',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '20/hour',
+        'user': '1000/day',
+    },
+    'SIMPLE_JWT': {
+        'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+        'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    }
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -63,7 +103,7 @@ ROOT_URLCONF = 'project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
