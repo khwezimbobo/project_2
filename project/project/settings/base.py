@@ -3,7 +3,9 @@ from pathlib import Path
 from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
+# ======================================================================
+# CELERY (background jobs)
+# ======================================================================
 CELERY_BROKER_URL = os.environ["CELERY_BROKER_URL"]
 CELERY_TIMEZONE = "Africa/Johannesburg"
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
@@ -40,15 +42,15 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.messages',
+    'django.contrib.messages',       # the admin site needs this
     'django.contrib.staticfiles',
     
-# ===  Helper App    ===
+# ===  Third-party helpers    ===
     'rest_framework',
-    'rest_framework.authtoken',        # harmless to keep; JWT replaces it for the API
-    'rest_framework_simplejwt',        # NEW: JWT login
-    'django_filters',                  # NEW: API filters
-    'corsheaders',                     # NEW: browser access to /api/
+    "rest_framework_simplejwt",      # JWT access and refresh tokens
+    "django_filters",                # ?field= filtering on list endpoints
+    "corsheaders",                   # browser access to /api/ (optional)   
+                      # NEW: browser access to /api/
 
 # ===  Our Customers App    ===
     'customers',
@@ -78,8 +80,8 @@ ROOT_URLCONF = 'project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
+        'DIRS': [BASE_DIR / 'templates'],   # project-level templates (dashboard)
+        'APP_DIRS': True,                   # also look inside each app's templates/
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
@@ -92,8 +94,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'project.wsgi.application'
 
-
-# Database
+# ======================================================================
+# DATABASE
+# ==================================================================
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
 DATABASES = {
@@ -127,7 +130,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
+# ======================================================================
+# INTERNATIONALISATION AND STATIC FILES
+# ======================================================================
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
@@ -138,86 +143,16 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = '/static/'
 
 
-# Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-EMAIL_BACKEND = os.getenv(
-    'EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend'
-)
-
-
-# ===== Customers app settings (Siseko) =====
-
-# Custom user model with the Admin/Agent role. MUST be set before the first migrate.
+# ======================================================================
+#   =====   CUSTOMER APP SETTINGS (SISEKO)    =====
+# ======================================================================
+# Use our User model (with the Admin / Support Agent role) everywhere.
+# MUST be set before the first migrate.
 AUTH_USER_MODEL = "customers.User"
-
-# Where @login_required sends anonymous visitors, and where users land after login.
-LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "customer_list"
-
-# Map Django message levels to Bootstrap alert colours.
-from django.contrib.messages import constants as message_constants  # noqa: E402
-MESSAGE_TAGS = {message_constants.ERROR: "danger"}
-
-# JWT token lifetimes.
-from datetime import timedelta  # noqa: E402
-SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    "AUTH_HEADER_TYPES": ("Bearer",),
-}
-
-# Django REST Framework: JWT auth, locked-down by default, paginated, custom errors.
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
-    ],
-    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
-    "DEFAULT_PAGINATION_CLASS": "customers.pagination.StandardPagination",
-    "PAGE_SIZE": 20,
-    "EXCEPTION_HANDLER": "customers.exceptions.custom_exception_handler",
-    "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
-    ],
-    "DEFAULT_THROTTLE_RATES": {
-        # Anonymous users: 20 requests per hour.
-        "anon": "20/hour",
-
-        # Authenticated users: 1000 requests per day.
-        "user": "1000/day",
-
-        # Scopes used by ScopedRateThrottle in customers/api.py.
-        "customer": "300/hour",
-        "login": "10/minute",
-
-        # Used by SubmissionBurstThrottle (its own rate attribute wins).
-        "customer_submission": "5/minute",
-    },
-}
-
-# Login lockout (customers/lockout.py reads these two; login breaks without them).
-LOCKOUT_MAX_ATTEMPTS = int(os.getenv("LOCKOUT_MAX_ATTEMPTS", "5"))
-LOCKOUT_SECONDS = int(os.getenv("LOCKOUT_SECONDS", "900"))
-
-# CORS: only these browser origins may call /api/. Empty list allows none.
-CORS_ALLOWED_ORIGINS = [o for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
-CORS_URLS_REGEX = r"^/api/.*$"
-
-# Logging: everything from the customers app goes to `docker compose logs`.
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {"standard": {"format": "{asctime} {levelname} {name} {message}", "style": "{"}},
-    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "standard"}},
-    "root": {"handlers": ["console"], "level": "WARNING"},
-    "loggers": {"customers": {"handlers": ["console"], "level": "INFO", "propagate": False}},
-}

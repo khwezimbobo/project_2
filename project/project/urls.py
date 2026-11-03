@@ -21,5 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     # Every page and API route of the customers app, including /dashboard/.
-    path("", include("customers.urls")),
+    # path("", include("customers.urls")),
 ]
