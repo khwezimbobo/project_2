@@ -34,7 +34,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(SubscriptionAuditLog)
+@admin.register(SubscriptionAuditLog)                 # Registers the SubscriptionAuditLog model with the Django Admin site, so staff can view the audit log of subscription status changes.
 class SubscriptionAuditLogAdmin(admin.ModelAdmin):
     list_display = ("subscription", "old_status", "new_status", "changed_by", "timestamp")
     list_filter = ("new_status", "old_status")
