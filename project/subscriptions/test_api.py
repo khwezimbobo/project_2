@@ -124,8 +124,7 @@ class CreateSubscriptionApiTests(APITestCase):
         self.client.force_authenticate(user=self.other_agent)
         response = self.client.get("/api/subscriptions/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
-        # NOTE: once pagination is on (Khwezi's PR #21), use len(response.data["results"]).
+        self.assertEqual(response.data["count"], 0)
 
     def test_admin_sees_all_subscriptions(self):
         # A user in the "Admin" group sees every agent's subscriptions.
@@ -134,8 +133,7 @@ class CreateSubscriptionApiTests(APITestCase):
         admin.groups.add(Group.objects.create(name="Admin"))
         self.client.force_authenticate(user=admin)
         response = self.client.get("/api/subscriptions/")
-        self.assertEqual(len(response.data), 1)
-        # NOTE: once pagination is on, use len(response.data["results"]).
+        self.assertEqual(response.data["count"], 1)
 
     # --- Validation and login -----------------------------------------------
 
