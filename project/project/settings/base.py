@@ -3,7 +3,9 @@ from pathlib import Path
 from celery.schedules import crontab, timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-
+# ======================================================================
+# CELERY (background jobs)
+# ======================================================================
 CELERY_BROKER_URL = os.environ["CELERY_BROKER_URL"]
 CELERY_TIMEZONE = "Africa/Johannesburg"
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
@@ -40,13 +42,13 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.messages',
+    'django.contrib.messages',      
     'django.contrib.staticfiles',
 # ===  OpenAPI schema generation and Swagger UI   ===
     'drf_spectacular',
 # ===  Helper App    ===
     'rest_framework',
-    'rest_framework.authtoken',
+    "rest_framework.authtoken",                
 # ===  Our Customers App    ===
     'customers',
 # ===  Our Packages App    ===
@@ -91,6 +93,7 @@ REST_FRAMEWORK = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',   # NEW: must sit above CommonMiddleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -117,8 +120,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'project.wsgi.application'
 
-
-# Database
+# ======================================================================
+# DATABASE
+# ==================================================================
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
 DATABASES = {
@@ -152,7 +156,9 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
+# ======================================================================
+# INTERNATIONALISATION AND STATIC FILES
+# ======================================================================
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
@@ -163,18 +169,16 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = '/static/'
 
 
-# Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
-    },
-}
+# ======================================================================
+#   =====   CUSTOMER APP SETTINGS (SISEKO)    =====
+# ======================================================================
+# Use our User model (with the Admin / Support Agent role) everywhere.
+# MUST be set before the first migrate.
+AUTH_USER_MODEL = "customers.User"
