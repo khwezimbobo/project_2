@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from celery.schedules import crontab
+from celery.schedules import crontab, timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # ======================================================================
@@ -42,16 +42,13 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.messages',       # the admin site needs this
+    'django.contrib.messages',      
     'django.contrib.staticfiles',
-    
-# ===  Third-party helpers    ===
+# ===  OpenAPI schema generation and Swagger UI   ===
+    'drf_spectacular',
+# ===  Helper App    ===
     'rest_framework',
-    "rest_framework_simplejwt",      # JWT access and refresh tokens
-    "django_filters",                # ?field= filtering on list endpoints
-    "corsheaders",                   # browser access to /api/ (optional)   
-                      # NEW: browser access to /api/
-
+    "rest_framework.authtoken",                
 # ===  Our Customers App    ===
     'customers',
 # ===  Our Packages App    ===
@@ -63,6 +60,35 @@ INSTALLED_APPS = [
 # ===  Our Reports App    ===
     'reports',
 ]
+
+REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER':'api.exceptions.custom_exception_handler',
+    'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_SCHEMA_CLASS':'drf_spectacular.openapi.AutoSchema',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '20/hour',
+        'user': '1000/day',
+    },
+    'SIMPLE_JWT': {
+        'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+        'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    }
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -80,8 +106,8 @@ ROOT_URLCONF = 'project.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],   # project-level templates (dashboard)
-        'APP_DIRS': True,                   # also look inside each app's templates/
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
