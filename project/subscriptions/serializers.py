@@ -2,9 +2,9 @@ from rest_framework import serializers
 
 from packages.models import AddOn, ContractTerm, Package
 
-from .models import Subscription, SubscriptionAddOn
+from .models import Subscription, SubscriptionAddOn, SubscriptionStatus
 from .permissions import is_admin
-from .services import create_subscription
+from .services import InvalidStatusTransition, check_transition, create_subscription
 
 # --- Serializers (BRD 8.1) ----------------------------------------------------
 class SubscriptionAddOnSerializer(serializers.ModelSerializer):
@@ -76,3 +76,21 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             installation_date=validated_data["installation_date"],
             created_by=self.context["request"].user,
         )
+
+    
+
+class StatusUpdateSerializer(serializers.Serializer):
+    """Input for PATCH /api/subscriptions/{id}/status/ - the new status plus an optional note."""
+
+    # ChoiceField: anything other than Pending/Active/Suspended/Cancelled is rejected with 400.
+    status = serializers.ChoiceField(choices=SubscriptionStatus.choices)
+    notes = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate_status(self, new_status):
+        # The subscription being changed is passed in by the view as "instance".
+        try:
+            check_transition(self.instance.status, new_status)
+        except InvalidStatusTransition as error:
+            # Turn the rule-breaking into a normal 400 with a clear message (BRD 18).
+            raise serializers.ValidationError(str(error))
+        return new_status
