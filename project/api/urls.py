@@ -16,7 +16,7 @@ urlpatterns = [
     path("", include("packages.urls")),              # /api/packages/                ISP-7
     path("", include("subscriptions.urls")),         # /api/subscriptions/...        ISP-9, ISP-13
     path("", include("alerts.urls")),                # /api/alerts/...               ISP-21
-    path("reports/", include("reports.api_urls")),   # /api/reports/...              ISP-28, ISP-29
+    path("reports/", include("reports.urls")),   # /api/reports/...              ISP-28, ISP-29
     path("auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),            # ISP-11
     path("auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),           # ISP-11
     path("schema/", SpectacularAPIView.as_view(**PUBLIC), name="schema"),                    # ISP-15

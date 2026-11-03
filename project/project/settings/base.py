@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from celery.schedules import crontab
+from celery.schedules import crontab, timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -60,11 +60,15 @@ INSTALLED_APPS = [
 ]
 
 REST_FRAMEWORK = {
+    'EXCEPTION_HANDLER':'api.exceptions.custom_exception_handler',
     'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
     'DEFAULT_SCHEMA_CLASS':'drf_spectacular.openapi.AutoSchema',
     'PAGE_SIZE': 20,
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -78,6 +82,10 @@ REST_FRAMEWORK = {
         'anon': '20/hour',
         'user': '1000/day',
     },
+    'SIMPLE_JWT': {
+        'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+        'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    }
 }
 
 MIDDLEWARE = [
