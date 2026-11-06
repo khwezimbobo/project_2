@@ -2,9 +2,9 @@ from rest_framework import serializers
 
 from packages.models import AddOn, ContractTerm, Package
 
-from .models import Subscription, SubscriptionAddOn
+from .models import Subscription, SubscriptionAddOn, SubscriptionAuditLog, SubscriptionStatus 
 from .permissions import is_admin
-from .services import create_subscription
+from .services import InvalidStatusTransition, check_transition, create_subscription
 
 # --- Serializers (BRD 8.1) ----------------------------------------------------
 class SubscriptionAddOnSerializer(serializers.ModelSerializer):
@@ -76,3 +76,48 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             installation_date=validated_data["installation_date"],
             created_by=self.context["request"].user,
         )
+
+    
+
+class StatusUpdateSerializer(serializers.Serializer):
+    """Input for PATCH /api/subscriptions/{id}/status/ - the new status plus an optional note."""
+
+    # ChoiceField: anything other than Pending/Active/Suspended/Cancelled is rejected with 400.
+    status = serializers.ChoiceField(choices=SubscriptionStatus.choices)
+    notes = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate_status(self, new_status):
+        # The subscription being changed is passed in by the view as "instance".
+        try:
+            check_transition(self.instance.status, new_status)
+        except InvalidStatusTransition as error:
+            # Turn the rule-breaking into a normal 400 with a clear message (BRD 18).
+            raise serializers.ValidationError(str(error))
+        return new_status
+
+    
+
+class SubscriptionFilterSerializer(serializers.Serializer):
+    """Checks the filter values in the URL, e.g. ?status=Active&package=1&contract_term=2.
+
+    All optional. An invalid value (unknown status, package that doesn't exist, not a number)
+    makes the list endpoint return 400 with a clear message instead of silently ignoring it (BRD 18).
+    """
+
+    status = serializers.ChoiceField(choices=SubscriptionStatus.choices, required=False)
+    package = serializers.PrimaryKeyRelatedField(queryset=Package.objects.all(), required=False)
+    contract_term = serializers.PrimaryKeyRelatedField(queryset=ContractTerm.objects.all(), required=False)
+
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    """One entry in a subscription's status history (GET /api/subscriptions/{id}/logs/)."""
+
+    # Show the username, or "System" for automatic changes made by Celery (changed_by is empty).
+    changed_by = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SubscriptionAuditLog
+        fields = ["log_id", "old_status", "new_status", "changed_by", "notes", "timestamp"]
+
+    def get_changed_by(self, log):
+        return log.changed_by.username if log.changed_by else "System"
