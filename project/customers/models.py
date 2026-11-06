@@ -5,7 +5,8 @@ import uuid
 # settings lets the FK refer to the user model by configuration.
 from django.conf import settings
 # AbstractUser is Django's full user (username, password, email, ...).
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group
+
 # models provides the Model base class and the field types.
 from django.db import models
 
@@ -38,7 +39,7 @@ class User(AbstractUser):
         db_table = "auth_user"
 
     @property
-    def  can_view_all(self):
+    def can_view_all(self):
         """
         Admins and superusers may see every customer.
         """
@@ -53,6 +54,37 @@ class User(AbstractUser):
             self.is_superuser
             or (self.is_staff and self.role in (self.Role.AGENT, self.Role.ADMIN))
         )
+    
+    # Maps each role value to the Django group with the same meaning.
+    # Names must match create_groups and the subscriptions app.    
+    ROLE_GROUPS = {
+        "admin": "Admin",
+        "agent": "Support Agent",
+    }
+        
+    def save(self, *args, **kwargs):
+        # Save first: a user needs a primary key before groups can be linked.
+        super().save(*args, **kwargs)
+        self.sync_role_group()
+
+    def sync_role_group(self):
+        """Put the user in the group that matches their role.
+
+        Keeps the Django groups consistent with the role column that
+        can_view_all reads. Users with no role (or an unknown one) are left
+        alone, so groups assigned by hand are never stripped.
+        """
+        # .get() returns for a blank or unknown role instead of raising KeyError.
+        wanted = self.ROLE_GROUPS.get(self.role)
+        if not wanted:
+            return
+        #Look up the group for this role, creating it if create_groups has not run yet.
+        group, _ = Group.objects.get_or_create(name=wanted)
+        self.groups.add(group)
+        # Remove the other role's group so a promoted or demoted user is
+        # never in both.
+        other = [name for r, name in self.ROLE_GROUPS.items() if r != self.role]
+        self.groups.remove(*Group.objects.filter(name__in=other))
 
 # ==================================================
 # CUSTOMER MODEL (table: customers)
