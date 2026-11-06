@@ -3,7 +3,7 @@
 # out in the SQL text. Never build SQL by formatting or joining strings.
 from django.db import connection
 
-from subscriptions import SubscriptionStatus
+from subscriptions.models import SubscriptionStatus
 
 REVENUE_BY_PACKAGE_SQL = """
     SELECT p.name AS package,
