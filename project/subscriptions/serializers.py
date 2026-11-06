@@ -6,6 +6,7 @@ from .models import Subscription, SubscriptionAddOn, SubscriptionAuditLog, Subsc
 from .permissions import is_admin
 from .services import InvalidStatusTransition, check_transition, create_subscription
 
+
 # --- Serializers (BRD 8.1) ----------------------------------------------------
 class SubscriptionAddOnSerializer(serializers.ModelSerializer):
     """One add-on on a subscription, with the price it had at sign-up."""
@@ -16,6 +17,7 @@ class SubscriptionAddOnSerializer(serializers.ModelSerializer):
     class Meta:
         model = SubscriptionAddOn   # The SubscriptionAddOn model is a through table that connects subscriptions to add-ons, and stores the price of the add-on at the time of subscription.
         fields = ["add_on_id", "name", "monthly_rate"]
+
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     """Create and view subscriptions.
@@ -76,6 +78,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             created_by=self.context["request"].user,
         )
 
+
 class StatusUpdateSerializer(serializers.Serializer):
     """Input for PATCH /api/subscriptions/{id}/status/ - the new status plus an optional note."""
 
@@ -92,6 +95,7 @@ class StatusUpdateSerializer(serializers.Serializer):
             raise serializers.ValidationError(str(error))
         return new_status
 
+
 class SubscriptionFilterSerializer(serializers.Serializer):
     """Checks the filter values in the URL, e.g. ?status=Active&package=1&contract_term=2.
 
@@ -102,6 +106,7 @@ class SubscriptionFilterSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=SubscriptionStatus.choices, required=False)
     package = serializers.PrimaryKeyRelatedField(queryset=Package.objects.all(), required=False)
     contract_term = serializers.PrimaryKeyRelatedField(queryset=ContractTerm.objects.all(), required=False)
+
 
 class AuditLogSerializer(serializers.ModelSerializer):
     """One entry in a subscription's status history (GET /api/subscriptions/{id}/logs/)."""
