@@ -1,8 +1,8 @@
-from rest_framework import serializers                      
+from rest_framework import serializers
 
 from packages.models import AddOn, ContractTerm, Package
 
-from .models import Subscription, SubscriptionAddOn, SubscriptionStatus
+from .models import Subscription, SubscriptionAddOn, SubscriptionAuditLog, SubscriptionStatus
 from .permissions import is_admin
 from .services import InvalidStatusTransition, check_transition, create_subscription
 
@@ -10,13 +10,12 @@ from .services import InvalidStatusTransition, check_transition, create_subscrip
 class SubscriptionAddOnSerializer(serializers.ModelSerializer):
     """One add-on on a subscription, with the price it had at sign-up."""
 
-    add_on_id = serializers.IntegerField(source="add_on.add_on_id", read_only=True)         
-    name = serializers.CharField(source="add_on.name", read_only=True)           
+    add_on_id = serializers.IntegerField(source="add_on.add_on_id", read_only=True)
+    name = serializers.CharField(source="add_on.name", read_only=True)
 
     class Meta:
         model = SubscriptionAddOn   # The SubscriptionAddOn model is a through table that connects subscriptions to add-ons, and stores the price of the add-on at the time of subscription.
         fields = ["add_on_id", "name", "monthly_rate"]
-
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     """Create and view subscriptions.
@@ -56,7 +55,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     def validate_customer(self, customer):
         # Support Agents may only create subscriptions for their own customers (BRD 8.2).
         user = self.context["request"].user
-        if not is_admin(user) and customer.agent_id != user.id:
+        if not is_admin(user) and customer.assigned_agent_id != user.pk:
             raise serializers.ValidationError("You can only create subscriptions for your own customers.")
         return customer
 
@@ -77,8 +76,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             created_by=self.context["request"].user,
         )
 
-    
-
 class StatusUpdateSerializer(serializers.Serializer):
     """Input for PATCH /api/subscriptions/{id}/status/ - the new status plus an optional note."""
 
@@ -94,3 +91,27 @@ class StatusUpdateSerializer(serializers.Serializer):
             # Turn the rule-breaking into a normal 400 with a clear message (BRD 18).
             raise serializers.ValidationError(str(error))
         return new_status
+
+class SubscriptionFilterSerializer(serializers.Serializer):
+    """Checks the filter values in the URL, e.g. ?status=Active&package=1&contract_term=2.
+
+    All optional. An invalid value (unknown status, package that doesn't exist, not a number)
+    makes the list endpoint return 400 with a clear message instead of silently ignoring it (BRD 18).
+    """
+
+    status = serializers.ChoiceField(choices=SubscriptionStatus.choices, required=False)
+    package = serializers.PrimaryKeyRelatedField(queryset=Package.objects.all(), required=False)
+    contract_term = serializers.PrimaryKeyRelatedField(queryset=ContractTerm.objects.all(), required=False)
+
+class AuditLogSerializer(serializers.ModelSerializer):
+    """One entry in a subscription's status history (GET /api/subscriptions/{id}/logs/)."""
+
+    # Show the username, or "System" for automatic changes made by Celery (changed_by is empty).
+    changed_by = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SubscriptionAuditLog
+        fields = ["log_id", "old_status", "new_status", "changed_by", "notes", "timestamp"]
+
+    def get_changed_by(self, log):
+        return log.changed_by.username if log.changed_by else "System"

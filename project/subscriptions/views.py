@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from .models import Subscription
-from .permissions import IsAdminGroup, is_admin
+from .permissions import IsAdminRole, is_admin
 from .serializers import StatusUpdateSerializer, SubscriptionSerializer
 from .services import change_status
 
@@ -36,12 +36,12 @@ class SubscriptionViewSet(mixins.CreateModelMixin,     # POST /api/subscriptions
         user = self.request.user
         if is_admin(user):
             return queryset
-        return queryset.filter(customer__agent=user)
+        return queryset.filter(customer__assigned_agent=user)
 
     # @action adds an extra URL to the ViewSet: detail=True means it's for ONE subscription,
     # so the router creates /api/subscriptions/{id}/status/.
     @action(detail=True, methods=["patch"], url_path="status",
-            permission_classes=[IsAuthenticated, IsAdminGroup])   # Admin only (FR-08)
+            permission_classes=[IsAuthenticated, IsAdminRole])   # Admin only (FR-08)
     def change_status(self, request, pk=None):
         """PATCH /api/subscriptions/{id}/status/  body: {"status": "Active", "notes": "..."}
 
