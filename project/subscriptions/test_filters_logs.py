@@ -6,7 +6,7 @@ Covers FR-15, TC-08, BRD 8.2 (20 per page) and BRD 18 (invalid filters return 40
 from datetime import date
 from io import StringIO
 
-from django.contrib.auth.models import Group, User
+from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -20,17 +20,18 @@ from .services import change_status, create_subscription
 LIST_URL = "/api/subscriptions/"
 
 
+User = get_user_model()   # the project's user model (customers.User)
+
 class FilterAndLogsTests(APITestCase):
 
     def setUp(self):
         call_command("seed_data", stdout=StringIO())
-        self.admin = User.objects.create_user(username="boss", password="pass12345")
-        self.admin.groups.add(Group.objects.create(name="Admin"))
-        self.agent = User.objects.create_user(username="agent", password="pass12345")
-        self.other_agent = User.objects.create_user(username="other", password="pass12345")
+        self.admin = User.objects.create_user(username="boss", password="pass12345", role="admin")
+        self.agent = User.objects.create_user(username="agent", password="pass12345", role="agent")
+        self.other_agent = User.objects.create_user(username="other", password="pass12345", role="agent")
         self.customer = Customer.objects.create(
-            name="Thandi", email="thandi@example.com", phone="0821234567",
-            address="1 Main Rd", agent=self.agent,
+            first_name="Thandi", last_name="Mokoena", email="thandi@example.com",
+            phone_number="0821234567", address="1 Main Rd", assigned_agent=self.agent,
         )
         self.basic = Package.objects.get(name="Home Basic")
         self.premium = Package.objects.get(name="Home Premium")

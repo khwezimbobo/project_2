@@ -5,7 +5,7 @@ from rest_framework.response import Response
 
 from .models import Subscription
 from .pagination import StandardPagination
-from .permissions import IsAdminGroup, is_admin
+from .permissions import IsAdminRole, is_admin
 from .serializers import (
     AuditLogSerializer,
     StatusUpdateSerializer,
@@ -52,7 +52,7 @@ class SubscriptionViewSet(mixins.CreateModelMixin,     # POST /api/subscriptions
         # subscriptions; admins see everything.
         user = self.request.user
         if not is_admin(user):
-            queryset = queryset.filter(customer__agent=user)
+            queryset = queryset.filter(customer__assigned_agent=user)
 
         # Filters only apply to the list (FR-15).
         if self.action == "list":
@@ -65,7 +65,7 @@ class SubscriptionViewSet(mixins.CreateModelMixin,     # POST /api/subscriptions
 
     # @action adds an extra URL for ONE subscription: /api/subscriptions/{id}/status/
     @action(detail=True, methods=["patch"], url_path="status",
-            permission_classes=[IsAuthenticated, IsAdminGroup])   # Admin only (FR-08)
+            permission_classes=[IsAuthenticated, IsAdminRole])   # Admin only (FR-08)
     def change_status(self, request, pk=None):
         """PATCH /api/subscriptions/{id}/status/  body: {"status": "Active", "notes": "..."}
 

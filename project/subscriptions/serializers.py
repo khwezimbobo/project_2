@@ -1,17 +1,18 @@
-from rest_framework import serializers                      
+from rest_framework import serializers
 
 from packages.models import AddOn, ContractTerm, Package
 
-from .models import Subscription, SubscriptionAddOn, SubscriptionAuditLog, SubscriptionStatus 
+from .models import Subscription, SubscriptionAddOn, SubscriptionAuditLog, SubscriptionStatus
 from .permissions import is_admin
 from .services import InvalidStatusTransition, check_transition, create_subscription
+
 
 # --- Serializers (BRD 8.1) ----------------------------------------------------
 class SubscriptionAddOnSerializer(serializers.ModelSerializer):
     """One add-on on a subscription, with the price it had at sign-up."""
 
-    add_on_id = serializers.IntegerField(source="add_on.add_on_id", read_only=True)         
-    name = serializers.CharField(source="add_on.name", read_only=True)           
+    add_on_id = serializers.IntegerField(source="add_on.add_on_id", read_only=True)
+    name = serializers.CharField(source="add_on.name", read_only=True)
 
     class Meta:
         model = SubscriptionAddOn   # The SubscriptionAddOn model is a through table that connects subscriptions to add-ons, and stores the price of the add-on at the time of subscription.
@@ -56,7 +57,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     def validate_customer(self, customer):
         # Support Agents may only create subscriptions for their own customers (BRD 8.2).
         user = self.context["request"].user
-        if not is_admin(user) and customer.agent_id != user.id:
+        if not is_admin(user) and customer.assigned_agent_id != user.pk:
             raise serializers.ValidationError("You can only create subscriptions for your own customers.")
         return customer
 
@@ -77,7 +78,6 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             created_by=self.context["request"].user,
         )
 
-    
 
 class StatusUpdateSerializer(serializers.Serializer):
     """Input for PATCH /api/subscriptions/{id}/status/ - the new status plus an optional note."""
@@ -95,7 +95,6 @@ class StatusUpdateSerializer(serializers.Serializer):
             raise serializers.ValidationError(str(error))
         return new_status
 
-    
 
 class SubscriptionFilterSerializer(serializers.Serializer):
     """Checks the filter values in the URL, e.g. ?status=Active&package=1&contract_term=2.

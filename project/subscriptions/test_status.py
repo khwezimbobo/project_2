@@ -6,7 +6,7 @@ Covers FR-08 (Admin only), FR-09 (audit log), BRD 18 (allowed transitions) and T
 from datetime import date
 from io import StringIO
 
-from django.contrib.auth.models import Group, User
+from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -17,19 +17,20 @@ from packages.models import ContractTerm, Package
 from .models import SubscriptionAuditLog, SubscriptionStatus
 from .services import InvalidStatusTransition, change_status, create_subscription
 
+User = get_user_model()
+
 
 class StatusChangeTests(APITestCase):
     """PATCH /api/subscriptions/{id}/status/ (FR-08, FR-09, BRD 18, TC-03)."""
 
     def setUp(self):
         call_command("seed_data", stdout=StringIO())
-        # An Admin (in the "Admin" group) and a Support Agent.
-        self.admin = User.objects.create_user(username="boss", password="pass12345")
-        self.admin.groups.add(Group.objects.create(name="Admin"))
-        self.agent = User.objects.create_user(username="agent", password="pass12345")
+        # An Admin (role "admin") and a Support Agent (role "agent").        
+        self.admin = User.objects.create_user(username="boss", password="pass12345", role="admin")
+        self.agent = User.objects.create_user(username="agent", password="pass12345", role="agent")
         customer = Customer.objects.create(
-            name="Thandi", email="thandi@example.com", phone="0821234567",
-            address="1 Main Rd", agent=self.agent,
+            first_name="Thandi", last_name="Mokoena", email="thandi@example.com",
+            phone_number="0821234567", address="1 Main Rd", assigned_agent=self.agent,
         )
         # A real subscription, created the same way the API does (starts Pending).
         self.subscription = create_subscription(
