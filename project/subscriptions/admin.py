@@ -19,7 +19,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
     # Filter sidebar on the right of the list page.
     list_filter = ("status", "package", "contract_term")
     # Search box: "__" follows the foreign key, so this searches the customer's name and email.
-    search_fields = ("customer__name", "customer__email")
+    search_fields = ("customer__first_name", "customer__last_name", "customer__email")
     # Show the subscription's add-ons inside its page.
     inlines = [SubscriptionAddOnInline]
     # Pricing is calculated by PricingService, so Admin can see it but not edit it.
@@ -30,7 +30,12 @@ class SubscriptionAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         # Subscriptions must be created through the API (POST /api/subscriptions/),
         # where prices are calculated server-side. Creating one here would leave the
-        # read-only pricing fields empty and fail. Existing ones can still be viewed and edited.
+        # read-only pricing fields empty and fail. Existing ones can still be viewed.
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        # View-only: status changes must go through PATCH /api/subscriptions/{id}/status/,
+        # which validates the transition and writes the audit log (FR-08, FR-09, BRD 18).
         return False
 
 
@@ -38,7 +43,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
 class SubscriptionAuditLogAdmin(admin.ModelAdmin):
     list_display = ("subscription", "old_status", "new_status", "changed_by", "timestamp")
     list_filter = ("new_status", "old_status")
-    search_fields = ("subscription__customer__name",)
+    search_fields = ("subscription__customer__last_name",)
 
     # The audit log is a permanent history of status changes (FR-09):
     # Admin can view it, but nobody can add, edit or delete entries by hand.

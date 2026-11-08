@@ -1,13 +1,14 @@
 from decimal import Decimal
 from io import StringIO     # for capturing management command output
 
-from django.contrib.auth.models import User         # for creating a test user
+from django.contrib.auth import get_user_model
 from django.core.management import call_command     # for loading the BRD catalogue into the test database
 from rest_framework import status                   # for HTTP status codes
 from rest_framework.test import APITestCase         # for testing the API
 
 from .models import Package
 
+User = get_user_model()
 
 class PackageApiTests(APITestCase):
     """Tests for the read-only packages API (GET /api/packages/)."""
@@ -23,8 +24,7 @@ class PackageApiTests(APITestCase):
     def test_list_shows_only_active_packages(self):
         response = self.client.get("/api/packages/")                                        # GET request to the packages API endpoint
         self.assertEqual(response.status_code, status.HTTP_200_OK)                          # check that the response status code is 200 OK
-        names = [p["name"] for p in response.data]                                          # extract the names of the packages from the response data
-        self.assertEqual(len(names), 4)                                                     # the 4 BRD packages
+        names = [p["name"] for p in response.data["results"]]                               # list is paginated: packages are under "results"        self.assertEqual(len(names), 4)                                                     # the 4 BRD packages
         self.assertNotIn("Old Package", names)                                              # inactive one is hidden
 
     def test_detail_includes_contract_terms_and_add_ons(self):
