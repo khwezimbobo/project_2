@@ -14,7 +14,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from django.db import transaction
 
-from .models import Subscription, SubscriptionAddOn, SubscriptionAuditLog
+from .models import Subscription, SubscriptionAddOn, SubscriptionAuditLog, SubscriptionStatus
 
 # --- Business rules (BRD 8.1) ------------------------------------------------
 INSTALLATION_FEE = Decimal("500.00")
@@ -172,5 +172,58 @@ def create_subscription(*, customer, package, contract_term, add_ons, installati
         old_status="",
         new_status=subscription.status,
         notes="Subscription created",
+    )
+    return subscription
+
+
+
+
+# --- Changing status (BRD 8.1, 18; FR-08, FR-09) ------------------------------
+
+# Which statuses each status may move to. Cancelled is final: nothing leaves it.
+ALLOWED_TRANSITIONS = {
+    SubscriptionStatus.PENDING: {SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCELLED},
+    SubscriptionStatus.ACTIVE: {SubscriptionStatus.SUSPENDED, SubscriptionStatus.CANCELLED},
+    SubscriptionStatus.SUSPENDED: {SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCELLED},
+    SubscriptionStatus.CANCELLED: set(),
+}
+
+
+class InvalidStatusTransition(Exception):
+    """Raised when a status change isn't allowed (e.g. Cancelled -> Active)."""
+
+
+def check_transition(old_status, new_status):
+    """Raise InvalidStatusTransition unless old_status -> new_status is allowed."""
+    if new_status == old_status:
+        raise InvalidStatusTransition(f"Subscription is already {old_status}.")
+    if new_status not in ALLOWED_TRANSITIONS[old_status]:
+        if old_status == SubscriptionStatus.CANCELLED:
+            raise InvalidStatusTransition("A Cancelled subscription cannot be changed.")
+        allowed = ", ".join(sorted(ALLOWED_TRANSITIONS[old_status]))
+        raise InvalidStatusTransition(
+            f"Cannot change status from {old_status} to {new_status}. Allowed: {allowed}."
+        )
+
+
+@transaction.atomic
+def change_status(subscription, new_status, changed_by=None, notes=""):
+    """Change a subscription's status and write the audit log entry, together.
+
+    The ONE place status changes happen - used by the API (PATCH .../status/)
+    and by Celery's auto-suspend task (changed_by=None means "System").
+    """
+    old_status = subscription.status
+    check_transition(old_status, new_status)   # Stops here with an error if not allowed
+
+    subscription.status = new_status
+    subscription.save(update_fields=["status", "updated_at"])   # Only save what changed
+
+    SubscriptionAuditLog.objects.create(
+        subscription=subscription,
+        changed_by=changed_by,
+        old_status=old_status,
+        new_status=new_status,
+        notes=notes,
     )
     return subscription

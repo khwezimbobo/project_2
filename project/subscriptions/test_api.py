@@ -11,7 +11,7 @@ Run with:
 
 from io import StringIO   # A "fake file" to swallow the seed command's printed output
 
-from django.contrib.auth.models import Group, User
+from django.contrib.auth import get_user_model    # Returns the User model, which may be custom
 from django.core.management import call_command   # Lets a test run a manage.py command
 from rest_framework import status                 # Named HTTP codes, e.g. status.HTTP_201_CREATED
 from rest_framework.test import APITestCase       # TestCase plus an API client (self.client)
@@ -20,6 +20,8 @@ from customers.models import Customer
 from packages.models import AddOn, ContractTerm, Package
 
 from .models import Subscription, SubscriptionAuditLog
+
+User = get_user_model()   # the project's user model (customers.User)
 
 
 class CreateSubscriptionApiTests(APITestCase):
@@ -32,13 +34,11 @@ class CreateSubscriptionApiTests(APITestCase):
         call_command("seed_data", stdout=StringIO())
 
         # Two Support Agents, so we can test that one can't touch the other's customers.
-        self.agent = User.objects.create_user(username="agent", password="pass12345")
-        self.other_agent = User.objects.create_user(username="other", password="pass12345")
-
-        # Example customer belonging to self.agent (not other_agent).
+        self.agent = User.objects.create_user(username="agent", password="pass12345", role="agent")
+        self.other_agent = User.objects.create_user(username="other", password="pass12345", role="agent")
         self.customer = Customer.objects.create(
-            name="Thandi", email="thandi@example.com", phone="0821234567",
-            address="1 Main Rd", agent=self.agent,
+            first_name="Thandi", last_name="Mokoena", email="thandi@example.com",
+            phone_number="0821234567", address="1 Main Rd", assigned_agent=self.agent,
         )
 
         # Look up the catalogue rows used in the worked example.
@@ -56,7 +56,7 @@ class CreateSubscriptionApiTests(APITestCase):
         Only these 5 fields are inputs - everything else is calculated by the server.
         """
         data = {
-            "customer": self.customer.id,
+            "customer": str(self.customer.pk),
             "package": self.package.package_id,
             "contract_term": self.term.contract_term_id,
             "add_ons": [self.static_ip.add_on_id, self.router.add_on_id],
@@ -124,18 +124,15 @@ class CreateSubscriptionApiTests(APITestCase):
         self.client.force_authenticate(user=self.other_agent)
         response = self.client.get("/api/subscriptions/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
-        # NOTE: once pagination is on (Khwezi's PR #21), use len(response.data["results"]).
+        self.assertEqual(response.data["count"], 0)
 
     def test_admin_sees_all_subscriptions(self):
-        # A user in the "Admin" group sees every agent's subscriptions.
+        # A user with role "admin" sees every agent's subscriptions.
         self.client.post("/api/subscriptions/", self.payload(), format="json")
-        admin = User.objects.create_user(username="boss", password="pass12345")
-        admin.groups.add(Group.objects.create(name="Admin"))
+        admin = User.objects.create_user(username="boss", password="pass12345", role="admin")
         self.client.force_authenticate(user=admin)
         response = self.client.get("/api/subscriptions/")
-        self.assertEqual(len(response.data), 1)
-        # NOTE: once pagination is on, use len(response.data["results"]).
+        self.assertEqual(response.data["count"], 1)
 
     # --- Validation and login -----------------------------------------------
 
