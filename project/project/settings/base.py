@@ -179,3 +179,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+# ======================================================================
+# CUSTOM USER MODEL
+# ======================================================================
+AUTH_USER_MODEL = "customers.User"
+
+# ======================================================================
+# LOGIN AND LOGOUT URLS
+# ======================================================================
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = 'login'

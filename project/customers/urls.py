@@ -6,12 +6,13 @@
 # ======================================================================
 
 from django.urls import include, path
-# DefaultRouter builds the list and detail routes from a ViewSet.
-from rest_framework.routers import DefaultRouter
+# SimpleRouter builds the same list and detail routes as DefaultRouter,
+# but without the extra API root page.
+from rest_framework.routers import SimpleRouter
 
 from .views import CustomerViewSet
 
-router = DefaultRouter()
+router = SimpleRouter()
 # basename names the routes "customer-list" and "customer-detail".
 router.register("customers", CustomerViewSet, basename="customer")
 

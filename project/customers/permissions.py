@@ -6,7 +6,7 @@ from .models import Customer
 
 logger = logging.getLogger(__name__)
 
-# Must match the data migration, create_groups and the subscriptions app.
+# Must match User.ROLE_GROUPS, the data migration and the subscriptions app.
 AGENT_GROUP = "Support Agent"
 
 # ===  ISP-1 / ISP-93 - ISP-95    ===
@@ -20,8 +20,15 @@ def is_admin(user):
 
 
 def is_agent(user):
-    """True if the user is in the Support Agent group (kept in sync with role)."""
-    return user.groups.filter(name=AGENT_GROUP).exists()
+    """True for Support Agents: role "agent" OR membership of the Support Agent group.
+
+    Checking the role as well as the group means an agent is never locked out
+    just because the group sync has not run yet.
+    """
+    return (
+        getattr(user, "role", "") == "agent"
+        or user.groups.filter(name=AGENT_GROUP).exists()
+    )
 
 
 def is_agent_or_admin(user):
@@ -60,7 +67,8 @@ def owns(user, obj, agent_field="assigned_agent"):
 
 
 def customers_for(user):
-    """Customers this user may list (kept for admin.py and other callers)."""
+    """Customers this user may list (used by admin.py)."""
+    # select_related fetches the agent in the same query.
     queryset = Customer.objects.select_related("assigned_agent")
     if is_admin(user):
         return queryset
@@ -96,7 +104,7 @@ class AgentScopedMixin:
         if getattr(self, "swagger_fake_view", False):
             return queryset.none()
         user = self.request.user
-        # detail is set by the router: True for /<id>/ routes and actions.
+        # "detail" is set by the router: True for /<id>/ routes and actions.
         if getattr(self, "detail", False) or is_admin(user):
             return queryset
         return queryset.filter(**{self.agent_field: user})
@@ -127,6 +135,7 @@ class IsAdminOrSupportAgent(BasePermission):
                 request.user.pk, type(obj).__name__, obj.pk,
             )
         return allowed
+
 
 class IsAdminOnly(BasePermission):
     """Admin-only actions, e.g. the subscription status PATCH."""

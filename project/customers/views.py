@@ -1,7 +1,10 @@
 # ===  ISP-1 / ISP-91    ===
-# viewsets gives ModelViewSet: list, create, retrieve, update, destroy in one class.
-from rest_framework import viewsets
+# ProtectedError is raised when a customer still has subscriptions pointing at it.
+from django.db.models import ProtectedError
+# viewsets gives ModelViewSet; status gives readable HTTP codes.
+from rest_framework import status, viewsets
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.response import Response
 
 from .models import Customer
 from .permissions import AgentScopedMixin, IsAdminOrSupportAgent
@@ -60,3 +63,14 @@ class CustomerViewSet(AgentScopedMixin, viewsets.ModelViewSet):
     def perform_create(self, serializer):
         # assigned_agent defaults to the requesting user; never trust the client.
         serializer.save(assigned_agent=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        # A customer with subscriptions cannot be deleted (PROTECT). Return a
+        # clean 400 instead of a 500, as the brief requires for DB constraints.
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {"detail": "This customer still has subscriptions and cannot be deleted."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )

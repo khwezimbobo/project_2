@@ -1,11 +1,20 @@
 import pytest
 from django.contrib.auth.models import Group
+# The cache holds the throttle counters, so tests clear it (see the fixture).
+from django.core.cache import cache
 from rest_framework.test import APIClient
 
 from .models import Customer, User
 
 URL = "/api/customers/"
 PASSWORD = "Pass12345!"
+
+
+@pytest.fixture(autouse=True)
+def clear_throttle_cache():
+    # Anonymous requests are limited to 20/hour; clear the counters so one
+    # test's requests never cause a 429 in another.
+    cache.clear()
 
 
 def make_user(username, role):
@@ -100,6 +109,15 @@ def test_wrong_password_gets_401(agent1):
 def test_user_without_role_gets_403(db):
     nobody = User.objects.create_user("nobody", password=PASSWORD, is_staff=True)
     assert client_for(nobody).get(URL).status_code == 403
+
+
+def test_role_only_agent_is_allowed(db):
+    # role="agent" with no group yet must still reach the API, because
+    # is_agent() checks the role column as well as the group.
+    user = User.objects.create_user("roleonly", password=PASSWORD, is_staff=True)
+    User.objects.filter(pk=user.pk).update(role="agent")  # update() skips the group sync
+    user.refresh_from_db()
+    assert client_for(user).get(URL).status_code == 200
 
 
 # ---------------- IDOR / role-based access ----------------
@@ -202,6 +220,12 @@ def test_search_by_name(admin, customers):
 def test_search_by_email_and_phone(admin, customers):
     assert client_for(admin).get(URL, {"search": "c1@x.com"}).data["count"] == 1
     assert client_for(admin).get(URL, {"search": "0821234567"}).data["count"] == 2
+
+
+def test_search_cannot_widen_an_agents_list(agent1, customers):
+    # Search runs on top of the scoped queryset, so agent1 never finds agent2's customer.
+    response = client_for(agent1).get(URL, {"search": "Last2"})
+    assert response.data["count"] == 0
 
 
 def test_ordering_descending(admin, customers):

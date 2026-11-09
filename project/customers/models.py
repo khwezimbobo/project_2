@@ -74,18 +74,17 @@ class User(AbstractUser):
         can_view_all reads. Users with no role (or an unknown one) are left
         alone, so groups assigned by hand are never stripped.
         """
-        # .get() returns for a blank or unknown role instead of raising KeyError.
+        # .get() returns None for a blank or unknown role instead of raising KeyError.
         wanted = self.ROLE_GROUPS.get(self.role)
         if not wanted:
             return
-        #Look up the group for this role, creating it if create_groups has not run yet.
+        # Look up the group for this role, creating it if the data migration has not run.
         group, _ = Group.objects.get_or_create(name=wanted)
         self.groups.add(group)
         # Remove the other role's group so a promoted or demoted user is
         # never in both.
         other = [name for r, name in self.ROLE_GROUPS.items() if r != self.role]
         self.groups.remove(*Group.objects.filter(name__in=other))
-
 # ==================================================
 # CUSTOMER MODEL (table: customers)
 # ==================================================
