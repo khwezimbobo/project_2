@@ -76,7 +76,7 @@ class ExpiringReportView(generics.ListAPIView):
     """GET /api/reports/expiring/ (Agent, Admin): subscriptions ending within 30 days."""
 
     serializer_class = ExpiringSubscriptionSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdminGroup]
 
     def get_queryset(self):
         queryset = expiring_subscriptions()
