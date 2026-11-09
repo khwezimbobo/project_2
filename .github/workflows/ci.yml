@@ -1,0 +1,46 @@
+name: CI - Application Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  app_logic_test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: project # the folder that contains manage.py
+    
+    # The environment variables we use for the application logic (not the database)
+    env:
+      DEBUG: "False" # Production safe default
+      SECRET_KEY: "ci-only-secret-key"
+      ALLOWED_HOSTS: "localhost"
+      
+    steps:
+      - uses: actions/checkout@v4
+
+      # Setup Python Environment
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: "requirements.txt" # Adjust path if needed
+
+      # Install system libraries (needed to build mysqlclient, if your models use it)
+      - name: Install system libraries
+        run: sudo apt-get update && sudo apt-get install -y libmysqlclient-dev pkg-config
+
+      # Install dependencies
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Linting
+      - name: Lint with flake8
+        run: flake8 . --max-line-length 120 --exclude migrations
+
+      # Run tests (using the mocked environment we just discussed)
+      - name: Run tests with pytest
+        run: pytest --ds=project.settings.test -v
