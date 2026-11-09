@@ -3,7 +3,7 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 from django.utils import timezone
 
-from subscriptions.models import Subscription
+from subscriptions.models import Subscription, SubscriptionStatus
 from .models import RenewalAlert
 
 logger = get_task_logger(__name__)
@@ -21,7 +21,7 @@ def check_expiring_subscriptions():
     cutoff = today + timedelta(days=ALERT_WINDOW_DAYS)
 
     candidates = Subscription.objects.filter(
-        status=Subscription.Status.ACTIVE,
+        status=SubscriptionStatus.ACTIVE,
         contract_end_date__lte=cutoff,
         renewal_alert__isnull=True,
     )

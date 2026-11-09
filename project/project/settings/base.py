@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',      
     'django.contrib.staticfiles',
+    'django_filters',
 # ===  OpenAPI schema generation and Swagger UI   ===
     'drf_spectacular',
 # ===  Helper App    ===
