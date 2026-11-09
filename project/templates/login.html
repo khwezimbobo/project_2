@@ -1,0 +1,48 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff login | ISP Subscription Management</title>
+  {# The styles live in their own file; {% static %} builds the URL. #}
+  <link rel="stylesheet" href="{% static 'customers/css/login.css' %}">
+</head>
+<body>
+  <main class="card">
+    <h1>ISP Subscription Management</h1>
+    <p class="subtitle">Staff sign in</p>
+
+    {# One generic message after a failed attempt, so it never reveals which part was wrong. #}
+    {% if form.errors %}
+      <div class="alert" role="alert">Incorrect username or password. Please try again.</div>
+    {% endif %}
+
+    {# Shown when the user was sent here from a protected page. #}
+    {% if next and not form.errors %}
+      <p class="note">Please sign in to continue.</p>
+    {% endif %}
+
+    {# action="" posts back to this same URL, so it works wherever the login view is mounted. #}
+    <form method="post" action="">
+      {% csrf_token %}
+
+      <label for="id_username">Username</label>
+      <input type="text" name="username" id="id_username"
+             value="{{ form.username.value|default_if_none:'' }}"
+             autocomplete="username" autofocus required>
+
+      <label for="id_password">Password</label>
+      <input type="password" name="password" id="id_password"
+             autocomplete="current-password" required>
+
+      {# Sends the user back to the page they originally asked for. #}
+      <input type="hidden" name="next" value="{{ next }}">
+
+      <button type="submit">Sign in</button>
+    </form>
+
+    <p class="footer">Authorised staff only</p>
+  </main>
+</body>
+</html>
