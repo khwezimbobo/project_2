@@ -128,7 +128,6 @@ class IsAdminOrSupportAgent(BasePermission):
             )
         return allowed
 
-
 class IsAdminOnly(BasePermission):
     """Admin-only actions, e.g. the subscription status PATCH."""
 

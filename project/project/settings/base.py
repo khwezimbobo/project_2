@@ -63,11 +63,16 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER':'api.exceptions.custom_exception_handler',
+    
     'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
-    'DEFAULT_SCHEMA_CLASS':'drf_spectacular.openapi.AutoSchema',
     'PAGE_SIZE': 20,
+
+    'DEFAULT_SCHEMA_CLASS':'drf_spectacular.openapi.AutoSchema',
+    
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -173,12 +178,3 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = '/static/'
-
-
-
-# ======================================================================
-#   =====   CUSTOMER APP SETTINGS (SISEKO)    =====
-# ======================================================================
-# Use our User model (with the Admin / Support Agent role) everywhere.
-# MUST be set before the first migrate.
-AUTH_USER_MODEL = "customers.User"

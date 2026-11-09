@@ -18,8 +18,36 @@ MAX_PHONE_DIGITS = 15
 # Phone and email validation
 def clean_phone_number(value):
     """Allow formatted numbers with 10-15 digits; return the trimmed value."""
-pass
+    value = (value or "").strip()
+    digit_count = 0
+    for position, character in enumerate(value):
+        if character in DIGITS:
+            digit_count += 1                 # counts towards the length
+        elif character == "+" and position == 0:
+            continue                         # "+" only as the first character
+        elif character in PHONE_FORMATTING:
+            continue                         # spaces, dashes, brackets, dots
+        else:
+            # Letters or other symbols, e.g. "08212345ab".
+            raise ValidationError(
+                "Phone number may only contain digits, spaces, brackets, "
+                "hyphens, dots and a leading +."
+            )
+    # Judge the length on digits only, so formatting never changes the result.
+    if not MIN_PHONE_DIGITS <= digit_count <= MAX_PHONE_DIGITS:
+        raise ValidationError(
+            f"Phone number must contain between {MIN_PHONE_DIGITS} "
+            f"and {MAX_PHONE_DIGITS} digits."
+        )
+    return value
 
+
+def clean_name(value, label):
+    """Trim a name and refuse one made only of spaces."""
+    value = (value or "").strip()
+    if not value:
+        raise ValidationError(f"{label} cannot be blank.")
+    return value
 
 # ===  ISP-1 / ISP-54    ===
 # ==================================================
