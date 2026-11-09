@@ -42,7 +42,7 @@ class DashboardPageTests(TestCase):
         response = self.client.get("/dashboard/")
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "dashboard/index.html")
-        self.assertTemplateUsed(response, "base.html")             # shared layout
+        self.assertTemplateUsed(response, "dashboard/base.html")   # shared layout (BRD 11.2)
         for label in ["Active subscribers", "Monthly revenue", "Pending renewal alerts"]:
             self.assertContains(response, label)
         self.assertContains(response, "bootstrap@5")                # Bootstrap 5 CDN

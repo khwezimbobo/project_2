@@ -183,3 +183,8 @@ STATIC_URL = '/static/'
 # Use our User model (with the Admin / Support Agent role) everywhere.
 # MUST be set before the first migrate.
 AUTH_USER_MODEL = "customers.User"
+
+
+# ======================================================================
+LOGIN_REDIRECT_URL = "/dashboard/"
+LOGOUT_REDIRECT_URL = "/accounts/login/"
