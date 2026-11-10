@@ -1,0 +1,77 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Log in{% endblock %}
+
+{% block extra_style %}
+        /* ---- Login: split screen. Left = brand panel, right = form ---- */
+        .login { min-height: 100vh; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); }
+        .login-brand {
+            background: var(--ink); color: #fff; position: relative; overflow: hidden;
+            display: flex; flex-direction: column; justify-content: flex-end; padding: 3rem;
+        }
+        .login-brand svg.strands { position: absolute; inset: 0; width: 100%; height: 100%; }
+        .login-brand .brand-name { position: relative; font-family: var(--font-figures); font-weight: 600; font-size: 2.6rem; line-height: 1.1; margin: 0; color: #fff; }
+        .login-brand p { position: relative; color: rgba(255, 255, 255, 0.72); max-width: 26rem; margin: 0.75rem 0 0; }
+        .login-form { display: flex; align-items: center; justify-content: center; padding: 3rem 1.5rem; background: var(--surface); }
+        .login-form form { width: 100%; max-width: 22rem; }
+        .login-form h1 { font-size: 1.9rem; margin-bottom: 0.25rem; }
+        .login-form .lead-in { color: var(--muted); margin-bottom: 2rem; }
+        .login-form .form-label { font-weight: 500; }
+        .login-form .form-control { background: var(--surface); padding: 0.65rem 0.8rem; border-radius: 6px; }
+        .login-form .btn-ink { padding: 0.7rem; border-radius: 6px; }
+        .login-error { background: var(--fault-soft); color: var(--fault); border: 0; border-left: 3px solid var(--fault); border-radius: 4px; }
+
+        @media (max-width: 767.98px) {
+            .login { grid-template-columns: 1fr; }
+            .login-brand { min-height: 12rem; padding: 2rem 1.5rem; }
+            .login-brand .brand-name { font-size: 2rem; }
+        }
+{% endblock %}
+
+{% block topbar %}{% endblock %}
+
+{% block main %}
+<main class="login">
+    <!-- Brand panel: fibre strands drawn in SVG -->
+    <section class="login-brand" aria-hidden="true">
+        <svg class="strands" viewBox="0 0 500 700" preserveAspectRatio="xMidYMin slice" fill="none" stroke-linecap="round">
+            <path d="M-20 330 C 140 330, 220 60, 520 60" stroke="#0B8A85" stroke-width="3"/>
+            <path d="M-20 370 C 160 370, 260 140, 520 130" stroke="#0B8A85" stroke-width="1.5" opacity=".6"/>
+            <path d="M-20 410 C 180 410, 300 220, 520 210" stroke="#7FC9C5" stroke-width="1.5" opacity=".45"/>
+            <path d="M-20 450 C 200 450, 340 300, 520 290" stroke="#FFFFFF" stroke-width="1" opacity=".25"/>
+        </svg>
+        <p class="brand-name">Backspace ISP</p>
+        <p>Customers, subscriptions and renewals for the support team.</p>
+    </section>
+
+    <!-- Login form -->
+    <section class="login-form">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            <h1>Staff login</h1>
+            <p class="lead-in">Use your staff username and password.</p>
+
+            <!-- Wrong username/password, or account locked -->
+            {% if form.non_field_errors %}
+                <div class="alert alert-danger login-error py-2" role="alert">
+                    {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+                </div>
+            {% endif %}
+
+            <div class="mb-3">
+                <label for="{{ form.username.id_for_label }}" class="form-label">Username</label>
+                <input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}"
+                       class="form-control" value="{{ form.username.value|default:'' }}" autocomplete="username" autofocus required>
+            </div>
+            <div class="mb-4">
+                <label for="{{ form.password.id_for_label }}" class="form-label">Password</label>
+                <input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}"
+                       class="form-control" autocomplete="current-password" required>
+            </div>
+            <!-- After login, go back to the page that sent you here (e.g. /dashboard/) -->
+            <input type="hidden" name="next" value="{{ next }}">
+            <button type="submit" class="btn btn-ink w-100">Log in</button>
+        </form>
+    </section>
+</main>
+{% endblock %}
