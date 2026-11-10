@@ -18,10 +18,12 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import RedirectView
 
-urlpatterns = [ 
+from reports.views import DashboardView
+
+urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('django.contrib.auth.urls')),  # login/logout/password management
-    path('dashboard/', include('reports.urls')),
+    path('dashboard/', DashboardView.as_view(), name='dashboard'),   # HTML page, session login (FR-13)
     path('api/', include('api.urls')),   # API routes
     path('', RedirectView.as_view(pattern_name='dashboard', permanent=False)),  # redirect root to dashboard
 ]

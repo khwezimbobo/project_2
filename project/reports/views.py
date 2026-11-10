@@ -1,7 +1,7 @@
 # Create your views here.
 from decimal import Decimal
 
-from django.contrib.auth.mixins import UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.views.generic import TemplateView
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics
@@ -19,23 +19,28 @@ from .serializers import (
 from .services import expiring_subscriptions, get_dashboard_data
 
 
-# ---- HTML dashboard (Admin, session login) ----
-class StaffRequiredMixin(UserPassesTestMixin):
-    """Anonymous users go to the login page; logged-in non-staff users get a 403."""
+# ---- HTML dashboard (BRD FR-13, section 12: "Admin (session)") ----
+class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    """Staff dashboard at /dashboard/ (mounted in project/urls.py, not under /api/).
+
+    - not logged in        -> redirected to /accounts/login/
+    - logged in, not Admin -> 403 Forbidden
+    - Admin                -> the dashboard
+
+    "Admin" uses the same rule as the API: role "admin" or superuser (user.can_view_all).
+    """
+
+    template_name = "dashboard/index.html"
 
     def test_func(self):
-        user = self.request.user
-        return user.is_active and user.is_superuser
-
-
-class DashboardView(StaffRequiredMixin, TemplateView):
-    template_name = "dashboard/index.html"
+        return self.request.user.can_view_all
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # active_count, monthly_revenue, pending_alerts,
+        # expiring_subscriptions (each with .days_left) and expiry_window_days
         context.update(get_dashboard_data())
         return context
-
 
 # ---- API reports ----
 class RevenueSummaryView(APIView):
