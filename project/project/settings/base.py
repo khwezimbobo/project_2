@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',      
     'django.contrib.staticfiles',
+    'django_filters',
 # ===  OpenAPI schema generation and Swagger UI   ===
     'drf_spectacular',
 # ===  Helper App    ===
@@ -63,11 +64,16 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER':'api.exceptions.custom_exception_handler',
+    
     'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
-    'DEFAULT_SCHEMA_CLASS':'drf_spectacular.openapi.AutoSchema',
     'PAGE_SIZE': 20,
+
+    'DEFAULT_SCHEMA_CLASS':'drf_spectacular.openapi.AutoSchema',
+    
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
+        "rest_framework.filters.SearchFilter",
+        "rest_framework.filters.OrderingFilter",
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
@@ -175,10 +181,36 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 
-
 # ======================================================================
-#   =====   CUSTOMER APP SETTINGS (SISEKO)    =====
+# LOGIN AND LOGOUT URLS
 # ======================================================================
 # Use our User model (with the Admin / Support Agent role) everywhere.
 # MUST be set before the first migrate.
 AUTH_USER_MODEL = "customers.User"
+
+
+# ======================================================================
+# LOGIN PAGES
+# ======================================================================
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = '/dashboard/'
+LOGOUT_REDIRECT_URL = 'login'
+
+# ======================================================================
+# SWAGGER / OPENAPI DOCS (drf-spectacular) - /api/docs/
+# ======================================================================
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Backspace ISP Subscription Management API",
+    "DESCRIPTION": (
+        "Staff API for customers, packages, subscriptions, renewal alerts and reports. "
+        "Log in with POST /api/auth/token/, then click Authorize and paste the access token."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,   # don't list the raw schema file as an endpoint
+    # Two different "status" choice lists exist; give each its own clear name in the docs.
+    "ENUM_NAME_OVERRIDES": {
+        "SubscriptionStatusEnum": "subscriptions.models.SubscriptionStatus",
+        "AlertStatusEnum": "alerts.models.RenewalAlert.Status",
+    },
+}
+
