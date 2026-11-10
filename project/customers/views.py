@@ -10,6 +10,20 @@ from .models import Customer
 from .permissions import AgentScopedMixin, IsAdminOrSupportAgent
 from .serializers import CustomerSerializer
 
+# Example request and response for POST.
+CREATE_EXAMPLES = [
+    OpenApiExample(
+        "New customer",
+        request_only=True,
+        value={
+            "first_name": "Siseko",
+            "last_name": "Mtebele",
+            "email": "siseko.mtebele@example.com",
+            "phone_number": "0821234567",
+            "address": "1 Long St, Cape Town",
+        },
+    ),
+]
 
 # ======================================================================
 # PAGINATION (lives here, so no separate pagination.py)
@@ -22,6 +36,24 @@ class StandardPagination(PageNumberPagination):
     page_size_query_param = "page_size"  # lets clients choose with ?page_size=
     max_page_size = 100                  # stops one request fetching the whole table
 
+# ======================================================================
+# SWAGGER DOCUMENTATION (ISP-15), shown at /api/docs/ under "Customers"
+# ======================================================================
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Customers"],
+        summary="List customers",
+        description=(
+            "Returns customers, 20 per page. Support Agents see only their own "
+            "customers; Admins see all. Supports ?search= (name, email, phone), "
+            "?ordering= (first_name, last_name, email, created_at), "
+            "?assigned_agent= and ?created_at__gte= / ?created_at__lte=, "
+            "and ?page_size= (max 100)."
+        ),
+    ),
+)
+
+class CustomerViewSet(AgentScopedMixin, viewsets.ModelViewSet):
 
 # ======================================================================
 # CUSTOMER VIEWSET
@@ -74,3 +106,4 @@ class CustomerViewSet(AgentScopedMixin, viewsets.ModelViewSet):
                 {"detail": "This customer still has subscriptions and cannot be deleted."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+            
