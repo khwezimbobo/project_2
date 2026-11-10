@@ -182,12 +182,15 @@ STATIC_URL = '/static/'
 
 
 # ======================================================================
-# CUSTOM USER MODEL
+# LOGIN AND LOGOUT URLS
 # ======================================================================
+# Use our User model (with the Admin / Support Agent role) everywhere.
+# MUST be set before the first migrate.
 AUTH_USER_MODEL = "customers.User"
 
+
 # ======================================================================
-# LOGIN AND LOGOUT URLS
+# LOGIN PAGES
 # ======================================================================
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = '/dashboard/'
@@ -210,3 +213,4 @@ SPECTACULAR_SETTINGS = {
         "AlertStatusEnum": "alerts.models.RenewalAlert.Status",
     },
 }
+
