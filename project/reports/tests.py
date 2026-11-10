@@ -6,22 +6,23 @@ from requests import Response
 
 import inspect
 import re
-from datetime import timedelta
+from datetime import date, timedelta
 from decimal import Decimal
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group
 from django.core.management import call_command
-from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
 
 from customers.models import Customer, User
-from packages.models import ContractTerm, Package
+from packages.models import AddOn, ContractTerm, Package
 from subscriptions.models import Subscription
 from subscriptions.services import create_subscription
 
 from . import queries
 from .queries import revenue_by_package
+from alerts.models import RenewalAlert
+# Create your tests here.
 
 REVENUE_URL = "/api/reports/revenue-summary/"
 EXPIRING_URL = "/api/reports/expiring/"
@@ -186,3 +187,31 @@ class ExpiringReportTests(ReportsTestBase):
  
     def test_unauthenticated_is_refused(self):
         self.assertEqual(self.client_for().get(EXPIRING_URL).status_code, 401)
+# tests dashboard
+class DashboardTests(ReportsTestBase):
+    def test_login_is_required(self):
+        response = self.client.get("/dashboard/")
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/accounts/login/", response["Location"])
+ 
+    def test_non_staff_users_are_refused(self):
+        self.client.force_login(self.agent1)
+        self.assertEqual(self.client.get("/dashboard/").status_code, 403)
+ 
+    def test_staff_see_the_numbers(self):
+        a = self.make_subscription(self.cust1, "Home Standard", days_until_end=12)  # 699
+        self.make_subscription(self.cust2, "Home Basic", days_until_end=100)        # 399
+        self.make_subscription(self.cust2, "Home Basic", status="Suspended")        # not counted
+        RenewalAlert.objects.create(subscription=a, days_until_expiry=12, alert_date=self.today)
+ 
+        self.client.force_login(self.boss)
+        response = self.client.get("/dashboard/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["active_count"], 2)
+        self.assertEqual(response.context["monthly_revenue"], Decimal("1098.00"))
+        self.assertEqual(response.context["pending_alerts"], 1)
+        self.assertEqual([s.days_left for s in response.context["expiring_subscriptions"]], [12])
+        self.assertContains(response, "R 1,098.00")
+ 
+    def test_root_redirects_to_the_dashboard(self):
+        self.assertEqual(self.client.get("/")["Location"], "/dashboard/")
