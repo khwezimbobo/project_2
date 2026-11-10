@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
@@ -5,6 +6,21 @@ from .models import Package
 from .serializers import PackageDetailSerializer, PackageSerializer
 
 
+# Swagger text for each action (ISP-15). Shown at /api/docs/ under "Packages".
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Packages"],
+        summary="List active packages",
+        description="Agent or Admin. The four seeded fibre packages with their monthly rate and speed. "
+                    "Inactive packages are hidden. Packages are read-only: they are managed in Django Admin.",
+    ),
+    retrieve=extend_schema(
+        tags=["Packages"],
+        summary="Get one package with its contract terms and add-ons",
+        description="Agent or Admin. Includes every contract term (with its price multiplier) and every "
+                    "active add-on, so staff have everything they need to quote a price.",
+    ),
+)
 class PackageViewSet(viewsets.ReadOnlyModelViewSet):
     """Read-only package catalogue.
 
