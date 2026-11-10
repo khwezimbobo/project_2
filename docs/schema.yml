@@ -1,0 +1,1551 @@
+openapi: 3.0.3
+info:
+  title: Backspace ISP Subscription Management API
+  version: 1.0.0
+  description: Staff API for customers, packages, subscriptions, renewal alerts and
+    reports. Log in with POST /api/auth/token/, then click Authorize and paste the
+    access token.
+paths:
+  /api/alerts/:
+    get:
+      operationId: alerts_list
+      description: /api/alerts/ and /api/alerts/{id}/acknowledge/. Alerts are created
+        by the Celery task.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - alerts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRenewalAlertList'
+          description: ''
+  /api/alerts/{id}/:
+    get:
+      operationId: alerts_retrieve
+      description: /api/alerts/ and /api/alerts/{id}/acknowledge/. Alerts are created
+        by the Celery task.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - alerts
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenewalAlert'
+          description: ''
+  /api/alerts/{id}/acknowledge/:
+    patch:
+      operationId: alerts_acknowledge_partial_update
+      description: /api/alerts/ and /api/alerts/{id}/acknowledge/. Alerts are created
+        by the Celery task.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - alerts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRenewalAlert'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRenewalAlert'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRenewalAlert'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RenewalAlert'
+          description: ''
+  /api/auth/token/:
+    post:
+      operationId: auth_token_create
+      description: Public. Send username and password. Use the access token with the
+        Authorize button.
+      summary: 'Log in: get an access and a refresh token'
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/auth/token/refresh/:
+    post:
+      operationId: auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      summary: Get a new access token using the refresh token
+      tags:
+      - Auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/customers/:
+    get:
+      operationId: customers_list
+      description: |-
+        Put this BEFORE the ViewSet class:  class X(AgentScopedMixin, ModelViewSet)
+
+        Set agent_field on the ViewSet to the ORM path of the owning agent:
+          customers      -> "assigned_agent"
+          subscriptions  -> "customer__assigned_agent"
+
+        LIST (no id in the URL): agents only receive their own records, and
+        search, filters and pagination run on top, so they can never widen it.
+
+        DETAIL (id in the URL): the queryset is NOT filtered. The record is
+        fetched first (unknown id -> 404), then check_object_permissions calls
+        has_object_permission, which refuses another agent's record with 403.
+        A filtered queryset alone would give 404, but the BRD requires 403.
+      parameters:
+      - in: query
+        name: assigned_agent
+        schema:
+          type: integer
+      - in: query
+        name: created_at__gte
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_at__lte
+        schema:
+          type: string
+          format: date-time
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - customers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCustomerList'
+          description: ''
+    post:
+      operationId: customers_create
+      description: |-
+        Put this BEFORE the ViewSet class:  class X(AgentScopedMixin, ModelViewSet)
+
+        Set agent_field on the ViewSet to the ORM path of the owning agent:
+          customers      -> "assigned_agent"
+          subscriptions  -> "customer__assigned_agent"
+
+        LIST (no id in the URL): agents only receive their own records, and
+        search, filters and pagination run on top, so they can never widen it.
+
+        DETAIL (id in the URL): the queryset is NOT filtered. The record is
+        fetched first (unknown id -> 404), then check_object_permissions calls
+        has_object_permission, which refuses another agent's record with 403.
+        A filtered queryset alone would give 404, but the BRD requires 403.
+      tags:
+      - customers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Customer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Customer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Customer'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: ''
+  /api/customers/{customer_id}/:
+    get:
+      operationId: customers_retrieve
+      description: |-
+        Put this BEFORE the ViewSet class:  class X(AgentScopedMixin, ModelViewSet)
+
+        Set agent_field on the ViewSet to the ORM path of the owning agent:
+          customers      -> "assigned_agent"
+          subscriptions  -> "customer__assigned_agent"
+
+        LIST (no id in the URL): agents only receive their own records, and
+        search, filters and pagination run on top, so they can never widen it.
+
+        DETAIL (id in the URL): the queryset is NOT filtered. The record is
+        fetched first (unknown id -> 404), then check_object_permissions calls
+        has_object_permission, which refuses another agent's record with 403.
+        A filtered queryset alone would give 404, but the BRD requires 403.
+      parameters:
+      - in: path
+        name: customer_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this customer.
+        required: true
+      tags:
+      - customers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: ''
+    put:
+      operationId: customers_update
+      description: |-
+        Put this BEFORE the ViewSet class:  class X(AgentScopedMixin, ModelViewSet)
+
+        Set agent_field on the ViewSet to the ORM path of the owning agent:
+          customers      -> "assigned_agent"
+          subscriptions  -> "customer__assigned_agent"
+
+        LIST (no id in the URL): agents only receive their own records, and
+        search, filters and pagination run on top, so they can never widen it.
+
+        DETAIL (id in the URL): the queryset is NOT filtered. The record is
+        fetched first (unknown id -> 404), then check_object_permissions calls
+        has_object_permission, which refuses another agent's record with 403.
+        A filtered queryset alone would give 404, but the BRD requires 403.
+      parameters:
+      - in: path
+        name: customer_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this customer.
+        required: true
+      tags:
+      - customers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Customer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Customer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Customer'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: ''
+    patch:
+      operationId: customers_partial_update
+      description: |-
+        Put this BEFORE the ViewSet class:  class X(AgentScopedMixin, ModelViewSet)
+
+        Set agent_field on the ViewSet to the ORM path of the owning agent:
+          customers      -> "assigned_agent"
+          subscriptions  -> "customer__assigned_agent"
+
+        LIST (no id in the URL): agents only receive their own records, and
+        search, filters and pagination run on top, so they can never widen it.
+
+        DETAIL (id in the URL): the queryset is NOT filtered. The record is
+        fetched first (unknown id -> 404), then check_object_permissions calls
+        has_object_permission, which refuses another agent's record with 403.
+        A filtered queryset alone would give 404, but the BRD requires 403.
+      parameters:
+      - in: path
+        name: customer_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this customer.
+        required: true
+      tags:
+      - customers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCustomer'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCustomer'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCustomer'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+          description: ''
+    delete:
+      operationId: customers_destroy
+      description: |-
+        Put this BEFORE the ViewSet class:  class X(AgentScopedMixin, ModelViewSet)
+
+        Set agent_field on the ViewSet to the ORM path of the owning agent:
+          customers      -> "assigned_agent"
+          subscriptions  -> "customer__assigned_agent"
+
+        LIST (no id in the URL): agents only receive their own records, and
+        search, filters and pagination run on top, so they can never widen it.
+
+        DETAIL (id in the URL): the queryset is NOT filtered. The record is
+        fetched first (unknown id -> 404), then check_object_permissions calls
+        has_object_permission, which refuses another agent's record with 403.
+        A filtered queryset alone would give 404, but the BRD requires 403.
+      parameters:
+      - in: path
+        name: customer_id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this customer.
+        required: true
+      tags:
+      - customers
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/packages/:
+    get:
+      operationId: packages_list
+      description: 'Agent or Admin. The four seeded fibre packages with their monthly
+        rate and speed. Inactive packages are hidden. Packages are read-only: they
+        are managed in Django Admin.'
+      summary: List active packages
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Packages
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPackageList'
+          description: ''
+  /api/packages/{package_id}/:
+    get:
+      operationId: packages_retrieve
+      description: Agent or Admin. Includes every contract term (with its price multiplier)
+        and every active add-on, so staff have everything they need to quote a price.
+      summary: Get one package with its contract terms and add-ons
+      parameters:
+      - in: path
+        name: package_id
+        schema:
+          type: integer
+        description: A unique integer value identifying this package.
+        required: true
+      tags:
+      - Packages
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PackageDetail'
+          description: ''
+  /api/reports/expiring/:
+    get:
+      operationId: reports_expiring_list
+      description: Active subscriptions ending within the next 30 days, soonest first.
+        Ones already past their end date (waiting for auto-suspend) are included with
+        a negative `days_left`. Agents see only their own customers' subscriptions;
+        Admins see all.
+      summary: Subscriptions expiring within 30 days
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - Reports
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExpiringSubscriptionList'
+          description: ''
+  /api/reports/revenue-summary/:
+    get:
+      operationId: reports_revenue_summary_retrieve
+      description: Admin only. Total monthly revenue of Active subscriptions, grouped
+        by package, with an overall total. Packages with no active subscriptions are
+        listed with zero.
+      summary: Active monthly revenue by package
+      tags:
+      - Reports
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevenueSummary'
+          description: ''
+  /api/subscriptions/:
+    get:
+      operationId: subscriptions_list
+      description: 'Agent or Admin. Agents only see their own customers'' subscriptions;
+        Admins see all. Optional filters: status, package and contract_term. An invalid
+        filter value returns 400 instead of being ignored.'
+      summary: List subscriptions (filterable, 20 per page)
+      parameters:
+      - in: query
+        name: contract_term
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: package
+        schema:
+          type: integer
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          enum:
+          - Pending
+          - Active
+          - Suspended
+          - Cancelled
+          type: string
+          minLength: 1
+        description: |-
+          * `Pending` - Pending
+          * `Active` - Active
+          * `Suspended` - Suspended
+          * `Cancelled` - Cancelled
+      tags:
+      - Subscriptions
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSubscriptionList'
+          description: ''
+        '400':
+          description: Invalid input, e.g. an unknown package or a filter that does
+            not exist.
+        '401':
+          description: No token, or the token has expired.
+    post:
+      operationId: subscriptions_create
+      description: 'Agent (own customers only) or Admin. Send the customer, package,
+        contract term, add-ons and installation date. The server calculates every
+        price: base x term multiplier, plus add-ons, minus the single highest discount
+        (Loyalty 15%, New Customer 10%, Multi Add-On 5%), plus the R500 installation
+        fee on the first month. Any prices or dates sent by the client are ignored.
+        The contract dates come from the installation date and the term length. New
+        subscriptions start as Pending, and an audit log entry is written.'
+      summary: Create a subscription (pricing calculated server-side)
+      tags:
+      - Subscriptions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+            examples:
+              NewCustomer,HomeStandard,12-Month,TwoAdd-ons:
+                value:
+                  customer: 6f1c2a9e-3b7d-4c55-9a0e-2d8f1b6c4e21
+                  package: 2
+                  contract_term: 2
+                  add_ons:
+                  - 1
+                  - 2
+                  installation_date: '2026-11-15'
+                summary: New customer, Home Standard, 12-Month, two add-ons
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Subscription'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+              examples:
+                Created:PricingCalculatedByTheServer:
+                  value:
+                    base_amount: '699.00'
+                    add_on_total: '250.00'
+                    subtotal: '949.00'
+                    discount_name: New Customer
+                    discount_amount: '94.90'
+                    monthly_total: '854.10'
+                    installation_fee: '500.00'
+                    first_month_total: '1354.10'
+                    contract_start_date: '2026-11-15'
+                    contract_end_date: '2027-11-15'
+                    status: Pending
+                  summary: 'Created: pricing calculated by the server'
+          description: ''
+        '400':
+          description: Invalid input, e.g. an unknown package or a filter that does
+            not exist.
+        '401':
+          description: No token, or the token has expired.
+        '403':
+          description: Logged in, but not allowed (e.g. an agent using another agent's
+            customer).
+  /api/subscriptions/{id}/:
+    get:
+      operationId: subscriptions_retrieve
+      description: Agent (own customers only) or Admin. Another agent's subscription
+        returns 404, so its existence is not revealed.
+      summary: Get one subscription with its full pricing breakdown
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: The subscription's subscription_id (UUID).
+        required: true
+      tags:
+      - Subscriptions
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+        '401':
+          description: No token, or the token has expired.
+        '404':
+          description: Not found, or it belongs to another agent's customer.
+  /api/subscriptions/{id}/logs/:
+    get:
+      operationId: subscriptions_logs_retrieve
+      description: Agent (own customers only) or Admin. Newest first, 20 per page.
+        changed_by is "System" when Celery made the change (automatic suspension).
+      summary: Status history (audit log) of a subscription
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: The subscription's subscription_id (UUID).
+        required: true
+      tags:
+      - Subscriptions
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditLogPage'
+          description: ''
+        '401':
+          description: No token, or the token has expired.
+        '404':
+          description: Not found, or it belongs to another agent's customer.
+  /api/subscriptions/{id}/status/:
+    patch:
+      operationId: subscriptions_status_partial_update
+      description: 'Admin only. Allowed changes: Pending to Active or Cancelled; Active
+        to Suspended or Cancelled; Suspended to Active or Cancelled. Cancelled is
+        final. Any other change returns 400. Every change is recorded in the audit
+        log with the admin''s username and the optional notes.'
+      summary: Change a subscription's status (Admin only)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: The subscription's subscription_id (UUID).
+        required: true
+      tags:
+      - Subscriptions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStatusUpdate'
+            examples:
+              ActivateAfterInstallation:
+                value:
+                  status: Active
+                  notes: Router installed and tested
+                summary: Activate after installation
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStatusUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStatusUpdate'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+          description: ''
+        '400':
+          description: Invalid input, e.g. an unknown package or a filter that does
+            not exist.
+        '401':
+          description: No token, or the token has expired.
+        '403':
+          description: Logged in, but not allowed (e.g. an agent using another agent's
+            customer).
+        '404':
+          description: Subscription not found.
+components:
+  schemas:
+    AddOn:
+      type: object
+      description: An optional monthly add-on, e.g. Static IP R100.
+      properties:
+        add_on_id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        monthly_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        description:
+          type: string
+      required:
+      - add_on_id
+      - monthly_rate
+      - name
+    AlertStatusEnum:
+      enum:
+      - Pending
+      - Acknowledged
+      type: string
+      description: |-
+        * `Pending` - Pending
+        * `Acknowledged` - Acknowledged
+    AuditLog:
+      type: object
+      description: One entry in a subscription's status history (GET /api/subscriptions/{id}/logs/).
+      properties:
+        log_id:
+          type: string
+          format: uuid
+          readOnly: true
+        old_status:
+          oneOf:
+          - $ref: '#/components/schemas/SubscriptionStatusEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        new_status:
+          $ref: '#/components/schemas/SubscriptionStatusEnum'
+        changed_by:
+          type: string
+          readOnly: true
+        notes:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - changed_by
+      - log_id
+      - new_status
+      - timestamp
+    AuditLogPage:
+      type: object
+      description: 'Swagger only: the paginated shape returned by GET /api/subscriptions/{id}/logs/.'
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditLog'
+      required:
+      - count
+      - next
+      - previous
+      - results
+    BlankEnum:
+      enum:
+      - ''
+    ContractTerm:
+      type: object
+      description: A contract term option, e.g. 24-Month x0.90.
+      properties:
+        contract_term_id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        multiplier:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,2}(?:\.\d{0,2})?$
+        duration_days:
+          type: integer
+          maximum: 4294967295
+          minimum: 0
+          format: int64
+        description:
+          type: string
+      required:
+      - contract_term_id
+      - duration_days
+      - multiplier
+      - name
+    Customer:
+      type: object
+      description: Validates incoming JSON and formats Customer rows as JSON.
+      properties:
+        customer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        phone_number:
+          type: string
+          maxLength: 20
+        address:
+          type: string
+        assigned_agent:
+          type: integer
+          readOnly: true
+        assigned_agent_username:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - address
+      - assigned_agent
+      - assigned_agent_username
+      - created_at
+      - customer_id
+      - email
+      - first_name
+      - last_name
+      - phone_number
+      - updated_at
+    ExpiringSubscription:
+      type: object
+      properties:
+        subscription_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_name:
+          type: string
+          readOnly: true
+        package_name:
+          type: string
+          readOnly: true
+        contract_term_name:
+          type: string
+          readOnly: true
+        monthly_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        contract_end_date:
+          type: string
+          format: date
+          readOnly: true
+        days_left:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/SubscriptionStatusEnum'
+          readOnly: true
+      required:
+      - contract_end_date
+      - contract_term_name
+      - customer
+      - customer_name
+      - days_left
+      - monthly_total
+      - package_name
+      - status
+      - subscription_id
+    Package:
+      type: object
+      description: 'Short version used on the list page: GET /api/packages/'
+      properties:
+        package_id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        monthly_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        speed_mbps:
+          type: integer
+          maximum: 4294967295
+          minimum: 0
+          format: int64
+        description:
+          type: string
+      required:
+      - monthly_rate
+      - name
+      - package_id
+      - speed_mbps
+    PackageDetail:
+      type: object
+      description: |-
+        Full version used on one package: GET /api/packages/{id}/
+
+        Adds the contract terms and add-ons a customer can choose with this package,
+        so staff have everything they need to quote a price (BRD section 12).
+      properties:
+        package_id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        monthly_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        speed_mbps:
+          type: integer
+          maximum: 4294967295
+          minimum: 0
+          format: int64
+        description:
+          type: string
+        contract_terms:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContractTerm'
+          readOnly: true
+        add_ons:
+          type: array
+          items:
+            $ref: '#/components/schemas/AddOn'
+          readOnly: true
+      required:
+      - add_ons
+      - contract_terms
+      - monthly_rate
+      - name
+      - package_id
+      - speed_mbps
+    PaginatedCustomerList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Customer'
+    PaginatedExpiringSubscriptionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExpiringSubscription'
+    PaginatedPackageList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Package'
+    PaginatedRenewalAlertList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RenewalAlert'
+    PaginatedSubscriptionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Subscription'
+    PatchedCustomer:
+      type: object
+      description: Validates incoming JSON and formats Customer rows as JSON.
+      properties:
+        customer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        phone_number:
+          type: string
+          maxLength: 20
+        address:
+          type: string
+        assigned_agent:
+          type: integer
+          readOnly: true
+        assigned_agent_username:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedRenewalAlert:
+      type: object
+      properties:
+        alert_id:
+          type: string
+          format: uuid
+          readOnly: true
+        subscription:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_name:
+          type: string
+          readOnly: true
+        package_name:
+          type: string
+          readOnly: true
+        contract_end_date:
+          type: string
+          format: date
+          readOnly: true
+        days_until_expiry:
+          type: integer
+          readOnly: true
+        alert_date:
+          type: string
+          format: date
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AlertStatusEnum'
+          readOnly: true
+        acknowledged_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        acknowledged_by_username:
+          type: string
+          readOnly: true
+        acknowledged_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedStatusUpdate:
+      type: object
+      description: Input for PATCH /api/subscriptions/{id}/status/ - the new status
+        plus an optional note.
+      properties:
+        status:
+          $ref: '#/components/schemas/SubscriptionStatusEnum'
+        notes:
+          type: string
+          default: ''
+    RenewalAlert:
+      type: object
+      properties:
+        alert_id:
+          type: string
+          format: uuid
+          readOnly: true
+        subscription:
+          type: string
+          format: uuid
+          readOnly: true
+        customer_name:
+          type: string
+          readOnly: true
+        package_name:
+          type: string
+          readOnly: true
+        contract_end_date:
+          type: string
+          format: date
+          readOnly: true
+        days_until_expiry:
+          type: integer
+          readOnly: true
+        alert_date:
+          type: string
+          format: date
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/AlertStatusEnum'
+          readOnly: true
+        acknowledged_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        acknowledged_by_username:
+          type: string
+          readOnly: true
+        acknowledged_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - acknowledged_at
+      - acknowledged_by
+      - acknowledged_by_username
+      - alert_date
+      - alert_id
+      - contract_end_date
+      - created_at
+      - customer_name
+      - days_until_expiry
+      - package_name
+      - status
+      - subscription
+    RevenueRow:
+      type: object
+      properties:
+        package:
+          type: string
+        active_subscriptions:
+          type: integer
+        monthly_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+      required:
+      - active_subscriptions
+      - monthly_revenue
+      - package
+    RevenueSummary:
+      type: object
+      properties:
+        total_monthly_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        packages:
+          type: array
+          items:
+            $ref: '#/components/schemas/RevenueRow'
+      required:
+      - packages
+      - total_monthly_revenue
+    Subscription:
+      type: object
+      description: |-
+        Create and view subscriptions.
+
+        The client sends ONLY: customer, package, contract_term, add_ons, installation_date.
+        Everything else (prices, contract dates, status, created_by) is read-only, so if the
+        client sends those fields DRF simply ignores them (BRD 18: client pricing is ignored).
+      properties:
+        subscription_id:
+          type: string
+          format: uuid
+          readOnly: true
+        customer:
+          type: string
+          format: uuid
+        package:
+          type: integer
+        contract_term:
+          type: integer
+        add_ons:
+          type: array
+          items:
+            type: integer
+            writeOnly: true
+          writeOnly: true
+        add_on_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubscriptionAddOn'
+          readOnly: true
+        installation_date:
+          type: string
+          format: date
+        contract_start_date:
+          type: string
+          format: date
+          readOnly: true
+        contract_end_date:
+          type: string
+          format: date
+          readOnly: true
+        base_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        add_on_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        discount_name:
+          type: string
+          readOnly: true
+        discount_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        monthly_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        installation_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        first_month_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/SubscriptionStatusEnum'
+          readOnly: true
+        created_by:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - add_on_details
+      - add_on_total
+      - base_amount
+      - contract_end_date
+      - contract_start_date
+      - contract_term
+      - created_at
+      - created_by
+      - customer
+      - discount_amount
+      - discount_name
+      - first_month_total
+      - installation_date
+      - installation_fee
+      - monthly_total
+      - package
+      - status
+      - subscription_id
+      - subtotal
+      - updated_at
+    SubscriptionAddOn:
+      type: object
+      description: One add-on on a subscription, with the price it had at sign-up.
+      properties:
+        add_on_id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        monthly_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+      required:
+      - add_on_id
+      - monthly_rate
+      - name
+    SubscriptionStatusEnum:
+      enum:
+      - Pending
+      - Active
+      - Suspended
+      - Cancelled
+      type: string
+      description: |-
+        * `Pending` - Pending
+        * `Active` - Active
+        * `Suspended` - Suspended
+        * `Cancelled` - Cancelled
+    TokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - password
+      - refresh
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
