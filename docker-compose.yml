@@ -1,4 +1,17 @@
-# One image (built from ./project/Dockerfile) is reused by django, celery_worker and celery_beat.
+version: '3.8'
+
+# Use a network for all services to talk to each other easily
+networks:
+  backend: {}
+  proxy: {}
+
+# Define shared volumes for persistent data
+volumes:
+  mysql_data:
+  rabbitmq_data:
+  app_data:
+
+# Shared image definition
 x-django-base: &django-base
   image: isp_backspace
   build:
@@ -8,7 +21,16 @@ x-django-base: &django-base
     - ./project:/usr/src/app/
   env_file:
     - .env
+  depends_on:
+    db:
+      condition: service_healthy
+    rabbitmq:
+      condition: service_healthy
+  networks:
+    - backend
+
 services:
+  # --- DATABASE SERVICE ---
   db:
     container_name: mysql
     image: mysql:8.4
@@ -21,10 +43,12 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p${DB_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # --- MESSAGE QUEUE SERVICE ---
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:3-management
@@ -33,7 +57,7 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
-      - "15672:15672"   # management UI (the broker's own port 5672 stays internal)
+      - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
@@ -41,37 +65,47 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # --- PRODUCTION APPLICATION SERVER (GUNICORN) ---
   django:
     <<: *django-base
     container_name: django
-    command: python manage.py runserver 0.0.0.0:8000
+    # *** CRITICAL CHANGE: Run Gunicorn instead of runserver ***
+    command: gunicorn project.wsgi:application --bind 0.0.0.0:8000
+    # We keep this port exposed so NGINX (on the same internal network) can reach it
     ports:
       - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+    environment:
+      # Explicitly set debug to False for safety in production
+      DEBUG: 'False' 
+    networks:
+      - backend
+      - proxy
+
+  # --- BACKGROUND WORKERS ---
   celery_worker:
     <<: *django-base
     container_name: celery_worker
     command: celery -A project worker -l info
-    depends_on:
-      db:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+    networks:
+      - backend
+
   celery_beat:
     <<: *django-base
     container_name: celery_beat
-    # schedule file goes to /tmp so it doesn't appear in your project folder
     command: celery -A project beat -l info -s /tmp/celerybeat-schedule
-    depends_on:
-      db:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+    networks:
+      - backend
 
-volumes:
-  mysql_data:
-  rabbitmq_data:
+  # --- THE FRONT DOOR (NGINX REVERSE PROXY) ---
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443" # For HTTPS
+    volumes:
+      # This volume mounts the custom nginx.conf we will create
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - django # Ensures Django is running before Nginx tries to proxy to it

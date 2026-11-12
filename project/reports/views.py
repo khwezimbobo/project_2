@@ -7,7 +7,7 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework.views import APIView, status
 
 from .permissions import IsAdminGroup
 from .queries import revenue_by_package
@@ -58,8 +58,13 @@ class RevenueSummaryView(APIView):
         responses=RevenueSummarySerializer,
     )
     def get(self, request):
-        rows = RevenueRowSerializer(revenue_by_package(), many=True).data
-        total = sum((Decimal(row["monthly_revenue"]) for row in rows), Decimal("0"))
+        try:
+            rows = RevenueRowSerializer(revenue_by_package(), many=True).data
+            total = sum((Decimal(row["monthly_revenue"]) for row in rows), Decimal("0"))
+        except Exception:
+            # If the database or query fails, return a safe structure instead of crashing
+            return Response({"detail": "Query failed to execute."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
         return Response(
             {
                 "total_monthly_revenue": str(total.quantize(Decimal("0.01"))),
