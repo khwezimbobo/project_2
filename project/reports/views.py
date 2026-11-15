@@ -1,7 +1,7 @@
-# Create your views here.
+# Copy to reports/views.py (replaces the earlier version)
 from decimal import Decimal
 
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import UserPassesTestMixin
 from django.views.generic import TemplateView
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics
@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .permissions import IsAdminGroup
+from .permissions import IsAdmin
 from .queries import revenue_by_package
 from .serializers import (
     ExpiringSubscriptionSerializer,
@@ -19,34 +19,29 @@ from .serializers import (
 from .services import expiring_subscriptions, get_dashboard_data
 
 
-# ---- HTML dashboard (BRD FR-13, section 12: "Admin (session)") ----
-class DashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    """Staff dashboard at /dashboard/ (mounted in project/urls.py, not under /api/).
-
-    - not logged in        -> redirected to /accounts/login/
-    - logged in, not Admin -> 403 Forbidden
-    - Admin                -> the dashboard
-
-    "Admin" uses the same rule as the API: role "admin" or superuser (user.can_view_all).
-    """
-
-    template_name = "dashboard/index.html"
+# ---- HTML dashboard (Admin, session login) ----
+class AdminRequiredMixin(UserPassesTestMixin):
+    """Anonymous users go to the login page; logged-in users who are not Admins get a 403."""
 
     def test_func(self):
-        return self.request.user.can_view_all
+        user = self.request.user
+        return user.is_authenticated and user.is_active and user.can_view_all
+
+
+class DashboardView(AdminRequiredMixin, TemplateView):
+    template_name = "dashboard/index.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        # active_count, monthly_revenue, pending_alerts,
-        # expiring_subscriptions (each with .days_left) and expiry_window_days
         context.update(get_dashboard_data())
         return context
+
 
 # ---- API reports ----
 class RevenueSummaryView(APIView):
     """GET /api/reports/revenue-summary/ (Admin): active monthly revenue per package, raw SQL."""
 
-    permission_classes = [IsAuthenticated, IsAdminGroup]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     @extend_schema(
         tags=["Reports"],
@@ -81,10 +76,10 @@ class ExpiringReportView(generics.ListAPIView):
     """GET /api/reports/expiring/ (Agent, Admin): subscriptions ending within 30 days."""
 
     serializer_class = ExpiringSubscriptionSerializer
-    permission_classes = [IsAuthenticated, IsAdminGroup]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = expiring_subscriptions()
-        if not self.request.user.is_superuser and not self.request.user.groups.filter(name="Admin").exists():
-            queryset = queryset.filter(customer__agent=self.request.user)
+        if not self.request.user.can_view_all:  # Admins (and superusers) see every subscription
+            queryset = queryset.filter(customer__assigned_agent=self.request.user)
         return queryset
