@@ -15,7 +15,8 @@ class SubscriptionAddOnSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="add_on.name", read_only=True)
 
     class Meta:
-        model = SubscriptionAddOn   # The SubscriptionAddOn model is a through table that connects subscriptions to add-ons, and stores the price of the add-on at the time of subscription.
+        # Through table linking subscriptions to add-ons; stores the add-on's price at sign-up.
+        model = SubscriptionAddOn
         fields = ["add_on_id", "name", "monthly_rate"]
 
 
@@ -118,5 +119,14 @@ class AuditLogSerializer(serializers.ModelSerializer):
         model = SubscriptionAuditLog
         fields = ["log_id", "old_status", "new_status", "changed_by", "notes", "timestamp"]
 
-    def get_changed_by(self, log):
+    def get_changed_by(self, log) -> str:   # "-> str" tells Swagger this field is text
         return log.changed_by.username if log.changed_by else "System"
+
+
+class AuditLogPageSerializer(serializers.Serializer):
+    """Swagger only: the paginated shape returned by GET /api/subscriptions/{id}/logs/."""
+
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True)
+    previous = serializers.URLField(allow_null=True)
+    results = AuditLogSerializer(many=True)

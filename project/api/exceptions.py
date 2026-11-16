@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 SERVER_ERROR_MESSAGE = "A server error occurred. Please try again later."
 
-
+# ===  ISP-2 / ISP-97   ===
 def custom_exception_handler(exc, context):
     """Give every API error the same JSON shape and never leak internals.
 

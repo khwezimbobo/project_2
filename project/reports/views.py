@@ -1,4 +1,4 @@
-# Create your views here.
+# Copy to reports/views.py (replaces the earlier version)
 from decimal import Decimal
 
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -9,7 +9,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView, status
 
-from .permissions import IsAdminGroup
+from .permissions import IsAdmin
 from .queries import revenue_by_package
 from .serializers import (
     ExpiringSubscriptionSerializer,
@@ -20,15 +20,15 @@ from .services import expiring_subscriptions, get_dashboard_data
 
 
 # ---- HTML dashboard (Admin, session login) ----
-class StaffRequiredMixin(UserPassesTestMixin):
-    """Anonymous users go to the login page; logged-in non-staff users get a 403."""
+class AdminRequiredMixin(UserPassesTestMixin):
+    """Anonymous users go to the login page; logged-in users who are not Admins get a 403."""
 
     def test_func(self):
         user = self.request.user
-        return user.is_active and user.is_superuser
+        return user.is_authenticated and user.is_active and user.can_view_all
 
 
-class DashboardView(StaffRequiredMixin, TemplateView):
+class DashboardView(AdminRequiredMixin, TemplateView):
     template_name = "dashboard/index.html"
 
     def get_context_data(self, **kwargs):
@@ -41,7 +41,7 @@ class DashboardView(StaffRequiredMixin, TemplateView):
 class RevenueSummaryView(APIView):
     """GET /api/reports/revenue-summary/ (Admin): active monthly revenue per package, raw SQL."""
 
-    permission_classes = [IsAuthenticated, IsAdminGroup]
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     @extend_schema(
         tags=["Reports"],
@@ -81,10 +81,10 @@ class ExpiringReportView(generics.ListAPIView):
     """GET /api/reports/expiring/ (Agent, Admin): subscriptions ending within 30 days."""
 
     serializer_class = ExpiringSubscriptionSerializer
-    permission_classes = [IsAuthenticated, IsAdminGroup]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         queryset = expiring_subscriptions()
-        if not self.request.user.is_superuser and not self.request.user.groups.filter(name="Admin").exists():
-            queryset = queryset.filter(customer__agent=self.request.user)
+        if not self.request.user.can_view_all:  # Admins (and superusers) see every subscription
+            queryset = queryset.filter(customer__assigned_agent=self.request.user)
         return queryset

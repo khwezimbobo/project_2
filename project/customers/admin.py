@@ -55,7 +55,7 @@ class CustomerAdminForm(forms.ModelForm):
             raise forms.ValidationError("A customer with this email already exists.")
         return email
 
-
+# ===  ISP-21 / ISP-24   ===
 # --------------------------------------------------
 # CUSTOMER ADMIN
 # --------------------------------------------------
@@ -71,7 +71,8 @@ class CustomerAdmin(admin.ModelAdmin):
     list_select_related = ("assigned_agent",)        # avoids one query per row
     readonly_fields = ("created_at", "updated_at")   # timestamps are automatic
 
-    # ---- row-level security (IDOR prevention) ----
+    # ===  ISP-2 / ISP-91   ===
+    # ===  ROW-LEVEL SECURITY (IDOR PREVENTION)  ===
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
         # Admins see everything; agents only their own customers.
@@ -83,7 +84,9 @@ class CustomerAdmin(admin.ModelAdmin):
         # List and add pages have no object yet, so only records are checked.
         return obj is None or owns(request.user, obj)
 
-    # ---- role-based permissions ----
+
+# ===  ROLE-BASED PERMISSIONS   ===
+
     def has_module_permission(self, request):
         return is_agent_or_admin(request.user)
 
@@ -100,7 +103,8 @@ class CustomerAdmin(admin.ModelAdmin):
         # Only Admins may delete customers.
         return is_agent_or_admin(request.user) and is_admin(request.user)
 
-    # ---- form behaviour ----
+# ===  FORM BEHAVIOUR   ===
+
     def get_readonly_fields(self, request, obj=None):
         readonly = list(super().get_readonly_fields(request, obj))
         # Agents cannot choose or change the owner.

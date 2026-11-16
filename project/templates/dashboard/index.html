@@ -1,0 +1,165 @@
+{% extends "dashboard/base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_style %}
+        /* ---- Page heading ---- */
+        .page-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem; margin-bottom: 1.5rem; }
+        .page-head h1 { font-size: 2rem; margin: 0; }
+        .page-head .date { color: var(--muted); }
+
+        /* ---- KPI strip: one panel, figures split by dividers (not three separate cards) ---- */
+        .kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 1.5rem; }
+        .kpi { padding: 1.25rem 1.5rem; }
+        .kpi + .kpi { border-left: 1px solid var(--line); }
+        .kpi-label { color: var(--muted); font-size: 0.95rem; margin: 0; }
+        .kpi-value { font-family: var(--font-figures); font-weight: 600; font-size: 2.6rem; line-height: 1.15; margin: 0.15rem 0 0; font-variant-numeric: tabular-nums; }
+        .kpi-value .unit { font-size: 0.55em; font-weight: 500; color: var(--muted); margin-right: 0.15em; }
+        .kpi-value.needs-attention { color: var(--amber); }
+        .kpi-value.empty { color: var(--line); }
+
+        /* ---- Contract runway: the next 30 days on one line ---- */
+        .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
+        .panel-head { padding: 1.25rem 1.5rem 0; }
+        .panel-head h2 { font-size: 1.35rem; margin: 0; }
+        .panel-head p { color: var(--muted); margin: 0.15rem 0 0; }
+
+        .runway { padding: 1.75rem 1.5rem 1.25rem; }
+        .runway-track { position: relative; height: 44px; }
+        /* Overdue contracts sit in a short stub left of "Today"; days 0-30 fill the rest */
+        .runway-track, .runway-scale { --stub: 2.5rem; }
+        .runway-line { position: absolute; left: var(--stub); right: 0; top: 21px; height: 2px; background: var(--line); }
+        /* The first 7 days are the urgent stretch */
+        .runway-overdue { position: absolute; left: 0; width: var(--stub); top: 21px; border-top: 2px dashed var(--fault-soft); }
+        .runway-urgent { position: absolute; left: var(--stub); width: calc((100% - var(--stub)) * 7 / 30); top: 19px; height: 6px; background: var(--amber-soft); border-radius: 3px; }
+        .runway-dot {
+            position: absolute; top: 14px; width: 16px; height: 16px; margin-left: -8px;
+            left: calc(var(--stub) + (100% - var(--stub)) * var(--pos, 0) / 100);
+            border-radius: 50%; background: var(--fibre); border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--fibre);
+        }
+        .runway-dot.soon { background: var(--amber); box-shadow: 0 0 0 1px var(--amber); }
+        .runway-dot.overdue { left: calc(var(--stub) / 2); background: var(--fault); box-shadow: 0 0 0 1px var(--fault); }
+        .runway-scale { padding-left: calc(var(--stub) - 1.2rem); display: flex; justify-content: space-between; color: var(--muted); font-size: 0.85rem; margin-top: 0.35rem; font-variant-numeric: tabular-nums; }
+
+        /* ---- Table of the same contracts ---- */
+        .table-contracts { margin: 0; --bs-table-bg: transparent; }
+        .table-contracts th { color: var(--muted); font-weight: 500; font-size: 0.9rem; border-bottom-color: var(--line); background: transparent; }
+        .table-contracts td { vertical-align: middle; border-bottom-color: var(--line); }
+        .table-contracts th:first-child, .table-contracts td:first-child { padding-left: 1.5rem; }
+        .table-contracts th:last-child, .table-contracts td:last-child { padding-right: 1.5rem; }
+        .num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+        .time-left { display: inline-block; white-space: nowrap; padding: 0.15rem 0.55rem; border-radius: 4px; font-size: 0.9rem; font-weight: 500; background: var(--fibre-soft); color: var(--fibre); }
+        .time-left.soon { background: var(--amber-soft); color: var(--amber); }
+        .time-left.overdue { background: var(--fault-soft); color: var(--fault); }
+        .empty-state { padding: 0 1.5rem 1.5rem; color: var(--muted); margin: 0; }
+
+        @media (max-width: 767.98px) {
+            .kpis { grid-template-columns: 1fr; }
+            .kpi + .kpi { border-left: 0; border-top: 1px solid var(--line); }
+            .kpi-value { font-size: 2.2rem; }
+        }
+{% endblock %}
+
+{% block content %}
+<header class="page-head">
+    <h1>Subscriber overview</h1>
+    <span class="date">{% now "l j F Y" %}</span>
+</header>
+
+<!-- KPI strip (FR-13). "—" shows until real data is connected. -->
+<section class="kpis" aria-label="Key figures">
+    <div class="kpi">
+        <p class="kpi-label">Active subscribers</p>
+        {% if active_count is not None %}
+            <p class="kpi-value">{{ active_count }}</p>
+        {% else %}
+            <p class="kpi-value empty">—</p>
+        {% endif %}
+    </div>
+    <div class="kpi">
+        <p class="kpi-label">Monthly revenue</p>
+        {% if monthly_revenue is not None %}
+            <p class="kpi-value"><span class="unit">R</span>{{ monthly_revenue|floatformat:"2g" }}</p>
+        {% else %}
+            <p class="kpi-value empty">—</p>
+        {% endif %}
+    </div>
+    <div class="kpi">
+        <p class="kpi-label">Pending renewal alerts</p>
+        {% if pending_alerts is not None %}
+            <p class="kpi-value {% if pending_alerts %}needs-attention{% endif %}">{{ pending_alerts }}</p>
+        {% else %}
+            <p class="kpi-value empty">—</p>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Contracts ending soon (FR-13): the runway shows where they fall in the next 30 days -->
+<section class="panel" aria-labelledby="runway-title">
+    <div class="panel-head">
+        <h2 id="runway-title">Contracts ending in the next {{ expiry_window_days }} days</h2>
+        <p>
+            {% with total=expiring_subscriptions|length %}
+                {% if total %}{{ total }} contract{{ total|pluralize }} to renew, soonest first.{% else %}Nothing to renew yet.{% endif %}
+            {% endwith %}
+        </p>
+    </div>
+
+    <div class="runway" aria-hidden="true">
+        <div class="runway-track">
+            <div class="runway-line"></div>
+            <div class="runway-overdue"></div>
+            <div class="runway-urgent"></div>
+            {% for sub in expiring_subscriptions %}
+                {% if sub.days_left < 0 %}
+                    <span class="runway-dot overdue" title="{{ sub.customer.full_name }}: ended {{ sub.days_left|stringformat:'d'|slice:'1:' }} days ago"></span>
+                {% else %}
+                    <span class="runway-dot {% if sub.days_left <= 7 %}soon{% endif %}"
+                          style="--pos: {% widthratio sub.days_left expiry_window_days 100 %}"
+                          title="{{ sub.customer.full_name }}: {{ sub.days_left }} day{{ sub.days_left|pluralize }} left"></span>
+                {% endif %}
+            {% endfor %}
+        </div>
+        <div class="runway-scale"><span>Today</span><span>1 week</span><span>2 weeks</span><span>3 weeks</span><span>{{ expiry_window_days }} days</span></div>
+    </div>
+
+    {% if expiring_subscriptions %}
+        <div class="table-responsive">
+            <table class="table table-contracts">
+                <thead>
+                    <tr>
+                        <th scope="col">Customer</th>
+                        <th scope="col" class="d-none d-md-table-cell">Package</th>
+                        <th scope="col" class="d-none d-sm-table-cell">Contract ends</th>
+                        <th scope="col">Time left</th>
+                        <th scope="col" class="num">Monthly</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for sub in expiring_subscriptions %}
+                        <tr>
+                            <td>{{ sub.customer.full_name }}</td>
+                            <td class="d-none d-md-table-cell">{{ sub.package.name }}</td>
+                            <td class="d-none d-sm-table-cell">{{ sub.contract_end_date|date:"j M Y" }}</td>
+                            <td>
+                                {% if sub.days_left < 0 %}
+                                    <span class="time-left overdue">Ended {{ sub.days_left|stringformat:'d'|slice:'1:' }} day{{ sub.days_left|pluralize }} ago</span>
+                                {% elif sub.days_left == 0 %}
+                                    <span class="time-left soon">Ends today</span>
+                                {% elif sub.days_left <= 7 %}
+                                    <span class="time-left soon">{{ sub.days_left }} day{{ sub.days_left|pluralize }}</span>
+                                {% else %}
+                                    <span class="time-left">{{ sub.days_left }} days</span>
+                                {% endif %}
+                            </td>
+                            <td class="num">R {{ sub.monthly_total|floatformat:"2g" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="empty-state">When a contract is 30 days from its end date it appears here, so the team can call the customer about renewing.</p>
+    {% endif %}
+</section>
+{% endblock %}

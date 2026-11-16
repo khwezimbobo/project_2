@@ -182,13 +182,35 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles' 
 
 # ======================================================================
-# CUSTOM USER MODEL
+# LOGIN AND LOGOUT URLS
 # ======================================================================
+# Use our User model (with the Admin / Support Agent role) everywhere.
+# MUST be set before the first migrate.
 AUTH_USER_MODEL = "customers.User"
 
+
 # ======================================================================
-# LOGIN AND LOGOUT URLS
+# LOGIN PAGES
 # ======================================================================
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = '/dashboard/'
 LOGOUT_REDIRECT_URL = 'login'
+
+# ======================================================================
+# SWAGGER / OPENAPI DOCS (drf-spectacular) - /api/docs/
+# ======================================================================
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Backspace ISP Subscription Management API",
+    "DESCRIPTION": (
+        "Staff API for customers, packages, subscriptions, renewal alerts and reports. "
+        "Log in with POST /api/auth/token/, then click Authorize and paste the access token."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,   # don't list the raw schema file as an endpoint
+    # Two different "status" choice lists exist; give each its own clear name in the docs.
+    "ENUM_NAME_OVERRIDES": {
+        "SubscriptionStatusEnum": "subscriptions.models.SubscriptionStatus",
+        "AlertStatusEnum": "alerts.models.RenewalAlert.Status",
+    },
+}
+

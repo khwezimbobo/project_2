@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 # Must match User.ROLE_GROUPS, the data migration and the subscriptions app.
 AGENT_GROUP = "Support Agent"
 
-# ===  ISP-1 / ISP-93 - ISP-95    ===
+# ===  ISP-2 / ISP-93 - ISP-95    ===
 # ==================================================
 # ROLE CHECKS
 # ==================================================
@@ -38,7 +38,7 @@ def is_agent_or_admin(user):
         and (is_admin(user) or is_agent(user))
     )
 
-
+# ===  ISP-2 / ISP-91   ===
 # ==================================================
 # OWNERSHIP (IDOR prevention)
 # ==================================================

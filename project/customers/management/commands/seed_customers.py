@@ -15,12 +15,12 @@ SEED_USERS = [
 
 # (first_name, last_name, email, phone_number, address, agent username)
 SEED_CUSTOMERS = [
-    ("Ayanda", "Zulu", "ayanda.zulu@example.com", "0821234567", "1 Long St, Cape Town", "agent1"),
-    ("Thabo", "Mokoena", "thabo.mokoena@example.com", "0827654321", "2 Short St, Durban", "agent1"),
-    ("Lerato", "Dlamini", "lerato.dlamini@example.com", "+27 83 111 2222", "3 Main Rd, Pretoria", "agent1"),
-    ("Sipho", "Nkosi", "sipho.nkosi@example.com", "0845551234", "4 Oak Ave, Johannesburg", "agent2"),
-    ("Naledi", "Khumalo", "naledi.khumalo@example.com", "(011) 555-0199", "5 Park Lane, Soweto", "agent2"),
-    ("Pieter", "van Wyk", "pieter.vanwyk@example.com", "0791239876", "6 Vine St, Stellenbosch", "agent2"),
+    ("Arda", "Guler", "arda.guler@example.com", "0821234567", "1 Long St, Cape Town", "agent1"),
+    ("Star", "Butterfly", "star.butterfly@example.com", "0827654321", "2 Short St, Durban", "agent1"),
+    ("Finn", "Human", "finn.human@example.com", "+27 83 111 2222", "3 Main Rd, Pretoria", "agent1"),
+    ("Nia", "Long", "nia.long@example.com", "0845551234", "4 Oak Ave, Johannesburg", "agent2"),
+    ("Zoe", "Deutsch", "zoe.deutsch@example.com", "(011) 555-0199", "5 Park Lane, Soweto", "agent2"),
+    ("Virgil", "van Dyk", "virgil.vandyk@example.com", "0791239876", "6 Vine St, Stellenbosch", "agent2"),
 ]
 
 
