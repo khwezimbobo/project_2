@@ -10,10 +10,10 @@ Run with:
 Safe to run more than once - existing rows are updated, never duplicated.
 """
 
-from decimal import Decimal  
+from decimal import Decimal
 
-from django.core.management.base import BaseCommand  
-from django.db import transaction  
+from django.core.management.base import BaseCommand
+from django.db import transaction
 
 from packages.models import AddOn, ContractTerm, Package
 

@@ -42,14 +42,14 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.messages',      
+    'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_filters',
 # ===  OpenAPI schema generation and Swagger UI   ===
     'drf_spectacular',
 # ===  Helper App    ===
     'rest_framework',
-    "rest_framework.authtoken",                
+    "rest_framework.authtoken",
 # ===  Our Customers App    ===
     'customers',
 # ===  Our Packages App    ===
@@ -64,12 +64,12 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     'EXCEPTION_HANDLER':'api.exceptions.custom_exception_handler',
-    
+
     'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
 
     'DEFAULT_SCHEMA_CLASS':'drf_spectacular.openapi.AutoSchema',
-    
+
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         "rest_framework.filters.SearchFilter",
@@ -179,7 +179,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles' 
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # ======================================================================
 # LOGIN AND LOGOUT URLS
@@ -213,4 +213,3 @@ SPECTACULAR_SETTINGS = {
         "AlertStatusEnum": "alerts.models.RenewalAlert.Status",
     },
 }
-

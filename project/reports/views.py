@@ -59,7 +59,7 @@ class RevenueSummaryView(APIView):
         except Exception:
             # If the database or query fails, return a safe structure instead of crashing
             return Response({"detail": "Query failed to execute."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
+
         return Response(
             {
                 "total_monthly_revenue": str(total.quantize(Decimal("0.01"))),

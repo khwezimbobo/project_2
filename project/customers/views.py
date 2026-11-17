@@ -3,9 +3,9 @@
 from django.db.models import ProtectedError
 # OpenApi* helpers describe the endpoints in Swagger (/api/docs/), as in subscriptions/views.py.
 from drf_spectacular.utils import (
-    OpenApiExample, 
-    OpenApiResponse, 
-    extend_schema, 
+    OpenApiExample,
+    OpenApiResponse,
+    extend_schema,
     extend_schema_view,
 )
 # viewsets gives ModelViewSet; status gives readable HTTP codes.

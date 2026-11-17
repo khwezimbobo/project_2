@@ -80,12 +80,12 @@ class Subscription(models.Model):
             models.Index(fields=["status", "contract_end_date"], name="idx_sub_status_end"),
         ]
 
-    def __str__(self):  
-        return f"{self.customer} - {self.package} ({self.status})"      
+    def __str__(self):
+        return f"{self.customer} - {self.package} ({self.status})"
 
 
-class SubscriptionAddOn(models.Model): 
-    """Link table: which add-ons a subscription has, and what each cost at sign-up.""" 
+class SubscriptionAddOn(models.Model):
+    """Link table: which add-ons a subscription has, and what each cost at sign-up."""
 
     # CASCADE: deleting a subscription deletes its add-on rows too.
     subscription = models.ForeignKey(
@@ -118,10 +118,10 @@ class SubscriptionAuditLog(models.Model):
     )
     # Nullable: Celery auto-suspension runs with no logged-in user (null = "System").
     changed_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,    
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="subscription_changes",
     )
-    
+
     # Blank on the very first entry (creation -> Pending).
     old_status = models.CharField(max_length=10, choices=SubscriptionStatus.choices, blank=True)
     new_status = models.CharField(max_length=10, choices=SubscriptionStatus.choices)

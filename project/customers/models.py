@@ -54,14 +54,14 @@ class User(AbstractUser):
             self.is_superuser
             or (self.is_staff and self.role in (self.Role.AGENT, self.Role.ADMIN))
         )
-    
+
     # Maps each role value to the Django group with the same meaning.
-    # Names must match create_groups and the subscriptions app.    
+    # Names must match create_groups and the subscriptions app.
     ROLE_GROUPS = {
         "admin": "Admin",
         "agent": "Support Agent",
     }
-        
+
     def save(self, *args, **kwargs):
         # Save first: a user needs a primary key before groups can be linked.
         super().save(*args, **kwargs)
@@ -103,7 +103,7 @@ class Customer(models.Model):
     # and search either part.
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
-    
+
     # phone_number: a string, because numbers may start with 0 or "+".
     phone_number = models.CharField(max_length=20)
 
@@ -113,7 +113,7 @@ class Customer(models.Model):
 
     # address: free text, because addresses vary in length and format.
     address = models.TextField()
-    
+
 # ===  ISP-1 / ISP-23    ===
     # assigned_agent (FK -> auth_user): the staff member responsible.
     assigned_agent = models.ForeignKey(

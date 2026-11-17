@@ -66,7 +66,7 @@ class AlertApiTests(TestCase):
     def test_agent_only_sees_alerts_for_their_own_customers(self):
         # Only the role decides what a user can see. Even an agent with the staff flag set must
         # not see other agents' alerts.
-        staff_agent = User.objects.create_user("staff_agent", password="pw", role="agent", is_staff=True)        
+        staff_agent = User.objects.create_user("staff_agent", password="pw", role="agent", is_staff=True)
         # Use the actual UUID strings from your setup objects
         expected_agent1_subs = {str(self.alert1.subscription_id), str(self.alert1b.subscription_id)}
         expected_agent2_subs = {str(self.alert2.subscription_id)}
@@ -95,9 +95,9 @@ class AlertApiTests(TestCase):
     def test_list_shows_useful_fields(self):
         # Dynamically get the subscription ID from the alert we created in setUpTestData
         expected_sub_id = str(self.alert1.subscription_id)
-        row = self.client_for(self.agent1).get(URL).json()["results"][0]        
+        row = self.client_for(self.agent1).get(URL).json()["results"][0]
         # FIX: Use the dynamic ID instead of the hardcoded ID ('9a66da7f...')
-        self.assertEqual(row["subscription"], expected_sub_id, "Subscription ID in response does not match the created alert's subscription")        
+        self.assertEqual(row["subscription"], expected_sub_id, "Subscription ID in response does not match the created alert's subscription")
         # Now the rest of your assertions should pass:
         self.assertEqual(row["package_name"], "Home Basic")
         self.assertEqual(row["status"], "Pending")

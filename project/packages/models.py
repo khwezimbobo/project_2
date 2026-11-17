@@ -9,7 +9,7 @@ from django.db import models
 class Package(models.Model):
     """An internet package the ISP sells."""
 
-    
+
     package_id = models.AutoField(primary_key=True)                                 # Primary key named to match the BRD data model.
     name = models.CharField(max_length=100, unique=True)                            # Unique so no two packages share a name; seed_data also uses it to find existing rows.
     monthly_rate = models.DecimalField(max_digits=10, decimal_places=2)             # Money is stored as an exact Decimal to avoid rounding errors in pricing.
