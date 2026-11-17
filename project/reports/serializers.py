@@ -35,3 +35,4 @@ class ExpiringSubscriptionSerializer(serializers.ModelSerializer):
     def get_days_left(self, obj):
         """Negative once the end date has passed."""
         return (obj.contract_end_date - timezone.localdate()).days
+    

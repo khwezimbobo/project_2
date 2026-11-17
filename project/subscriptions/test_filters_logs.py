@@ -120,3 +120,4 @@ class FilterAndLogsTests(APITestCase):
         self.client.force_authenticate(user=self.other_agent)
         response = self.client.get(f"{LIST_URL}{sub.subscription_id}/logs/")
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        

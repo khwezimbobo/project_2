@@ -94,3 +94,4 @@ class StatusChangeTests(APITestCase):
         # The same rules apply to automatic changes.
         with self.assertRaises(InvalidStatusTransition):
             change_status(self.subscription, SubscriptionStatus.PENDING)
+            

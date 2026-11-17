@@ -216,3 +216,4 @@ class SubscriptionViewSet(mixins.CreateModelMixin,     # POST /api/subscriptions
         logs = subscription.audit_logs.select_related("changed_by").order_by("-timestamp")
         page = self.paginate_queryset(logs)   # 20 per page, like every list
         return self.get_paginated_response(AuditLogSerializer(page, many=True).data)
+    

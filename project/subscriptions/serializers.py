@@ -130,3 +130,4 @@ class AuditLogPageSerializer(serializers.Serializer):
     next = serializers.URLField(allow_null=True)
     previous = serializers.URLField(allow_null=True)
     results = AuditLogSerializer(many=True)
+    
