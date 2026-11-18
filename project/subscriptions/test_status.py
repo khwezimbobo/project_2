@@ -25,7 +25,7 @@ class StatusChangeTests(APITestCase):
 
     def setUp(self):
         call_command("seed_data", stdout=StringIO())
-        # An Admin (role "admin") and a Support Agent (role "agent").        
+        # An Admin (role "admin") and a Support Agent (role "agent").
         self.admin = User.objects.create_user(username="boss", password="pass12345", role="admin")
         self.agent = User.objects.create_user(username="agent", password="pass12345", role="agent")
         customer = Customer.objects.create(
