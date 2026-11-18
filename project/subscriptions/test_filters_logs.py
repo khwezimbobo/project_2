@@ -22,6 +22,7 @@ LIST_URL = "/api/subscriptions/"
 
 User = get_user_model()   # the project's user model (customers.User)
 
+
 class FilterAndLogsTests(APITestCase):
 
     def setUp(self):

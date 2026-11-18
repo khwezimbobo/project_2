@@ -16,11 +16,11 @@ from django.contrib.auth.models import Group, Permission
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-   # Our Django apps (the "app_label" part of each permission).
+# Our Django apps (the "app_label" part of each permission).
 OUR_APPS = ["customers", "packages", "subscriptions", "alerts", "reports"]
 
-   # Django auto-creates view_/add_/change_/delete_ permissions for every model.
-   # Support Agents get no delete permissions (BRD section 7: "no delete").
+# Django auto-creates view_/add_/change_/delete_ permissions for every model.
+# Support Agents get no delete permissions (BRD section 7: "no delete").
 SUPPORT_AGENT_PERMISSIONS = [
     "view_customer", "add_customer", "change_customer",
     "view_package", "view_contractterm", "view_addon",
