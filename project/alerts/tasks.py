@@ -6,9 +6,10 @@ from django.utils import timezone
 from subscriptions.models import Subscription, SubscriptionStatus
 from .models import RenewalAlert
 
-logger = get_task_(__name__)
+logger = get_task_logger(__name__)
 
 ALERT_WINDOW_DAYS = 7
+
 
 @shared_task
 def check_expiring_subscriptions():
@@ -44,4 +45,5 @@ def check_expiring_subscriptions():
     logger.info(
         "check_expiring_subscriptions finished: %s alert(s) created, %s error(s)", created, errors
     )
+
     return {"created": created, "errors": errors}

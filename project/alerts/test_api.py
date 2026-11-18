@@ -97,7 +97,11 @@ class AlertApiTests(TestCase):
         expected_sub_id = str(self.alert1.subscription_id)
         row = self.client_for(self.agent1).get(URL).json()["results"][0]
         # FIX: Use the dynamic ID instead of the hardcoded ID ('9a66da7f...')
-        self.assertEqual(row["subscription"], expected_sub_id, "Subscription ID in response does not match the created alert's subscription")
+        self.assertEqual(
+            row["subscription"],
+            expected_sub_id,
+            "Subscription ID in response does not match the created alert's subscription"
+        )
         # Now the rest of your assertions should pass:
         self.assertEqual(row["package_name"], "Home Basic")
         self.assertEqual(row["status"], "Pending")

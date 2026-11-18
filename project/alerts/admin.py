@@ -3,6 +3,7 @@ from django.contrib import admin
 from .models import RenewalAlert
 # Register your models here.
 
+
 @admin.register(RenewalAlert)
 class RenewalAlertAdmin(admin.ModelAdmin):
     """Alerts are created by the Celery task and acknowledged through the API, so read-only here."""

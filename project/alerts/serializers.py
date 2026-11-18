@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from .models import RenewalAlert
 
+
 class RenewalAlertSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source="subscription.customer.name", read_only=True)
     package_name = serializers.CharField(source="subscription.package.name", read_only=True)
