@@ -6,7 +6,7 @@ from django.utils import timezone
 from subscriptions.models import Subscription, SubscriptionStatus
 from .models import RenewalAlert
 
-logger = get_task_logger(__name__)
+logger = get_task_(__name__)
 
 ALERT_WINDOW_DAYS = 7
 
