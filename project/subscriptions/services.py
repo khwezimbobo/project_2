@@ -8,7 +8,7 @@ The pure functions (best_discount, calculate_pricing, calculate_contract_dates)
 need no database, so they can be unit-tested quickly without Docker.
 """
 
-from dataclasses import dataclass                    
+from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -83,7 +83,7 @@ def calculate_pricing(monthly_rate, multiplier, add_on_rates, discount):
     subtotal = base_amount + add_on_total
     discount_amount = money(subtotal * discount_rate)
     monthly_total = subtotal - discount_amount
-    first_month_total = monthly_total + INSTALLATION_FEE            
+    first_month_total = monthly_total + INSTALLATION_FEE
 
     return PricingBreakdown(
         base_amount=base_amount,
@@ -131,7 +131,7 @@ def price_subscription(customer, package, contract_term, add_ons, today=None):
 
 # --- Creating a subscription ---------------------------------------------------
 
-@transaction.atomic        
+@transaction.atomic
 def create_subscription(*, customer, package, contract_term, add_ons, installation_date, created_by):
     """Create a fully priced subscription with its add-ons and first audit log entry.
 
@@ -176,10 +176,7 @@ def create_subscription(*, customer, package, contract_term, add_ons, installati
     return subscription
 
 
-
-
 # --- Changing status (BRD 8.1, 18; FR-08, FR-09) ------------------------------
-
 # Which statuses each status may move to. Cancelled is final: nothing leaves it.
 ALLOWED_TRANSITIONS = {
     SubscriptionStatus.PENDING: {SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCELLED},

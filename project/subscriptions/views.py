@@ -130,8 +130,6 @@ SUBSCRIPTION_ID = OpenApiParameter("id", OpenApiTypes.UUID, OpenApiParameter.PAT
                    404: OpenApiResponse(description="Not found, or it belongs to another agent's customer.")},
     ),
 )
-
-
 class SubscriptionViewSet(mixins.CreateModelMixin,     # POST /api/subscriptions/
                           mixins.ListModelMixin,       # GET  /api/subscriptions/
                           mixins.RetrieveModelMixin,   # GET  /api/subscriptions/{id}/

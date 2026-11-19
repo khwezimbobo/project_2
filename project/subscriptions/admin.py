@@ -22,7 +22,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
     search_fields = ("customer__first_name", "customer__last_name", "customer__email")
     # Show the subscription's add-ons inside its page.
     inlines = [SubscriptionAddOnInline]
-    # Pricing is calculated by PricingService, so Admin can see it but not edit it.
+    # Pricing is calculated by the pricing service, so Admin can see it but not edit it.
     readonly_fields = ("base_amount", "add_on_total", "subtotal", "discount_name",
                        "discount_amount", "monthly_total", "installation_fee",
                        "first_month_total", "created_at", "updated_at")
@@ -39,7 +39,9 @@ class SubscriptionAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(SubscriptionAuditLog)                 # Registers the SubscriptionAuditLog model with the Django Admin site, so staff can view the audit log of subscription status changes.
+# Registers the audit log with Django Admin, so staff can view the history of
+# subscription status changes.
+@admin.register(SubscriptionAuditLog)
 class SubscriptionAuditLogAdmin(admin.ModelAdmin):
     list_display = ("subscription", "old_status", "new_status", "changed_by", "timestamp")
     list_filter = ("new_status", "old_status")
