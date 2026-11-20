@@ -3,6 +3,7 @@ max-line-length = 100
 exclude = migrations,__pycache__
 per-file-ignores =
     project/settings/development.py: F401,F403,W292
+    project/settings/production.py: F401,F403,W292
     project/settings/test.py: F401,F403,E402
     project/settings/base.py: E122,W293
     project/__init__.py: W292

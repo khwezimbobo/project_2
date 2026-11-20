@@ -2,12 +2,13 @@ import os
 from pathlib import Path
 from celery.schedules import crontab, timedelta
 
+TIME_ZONE = 'Africa/Johannesburg'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # ======================================================================
 # CELERY (background jobs)
 # ======================================================================
 CELERY_BROKER_URL = os.environ["CELERY_BROKER_URL"]
-CELERY_TIMEZONE = "Africa/Johannesburg"
+CELERY_TIMEZONE = TIME_ZONE
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 CELERY_BEAT_SCHEDULE = {
     "check-expiring-subscriptions": {
@@ -169,8 +170,6 @@ AUTH_PASSWORD_VALIDATORS = [
 # https://docs.djangoproject.com/en/6.1/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
 
 USE_I18N = True
 
