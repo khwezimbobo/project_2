@@ -1,39 +1,39 @@
+# Customer input validation (BRD s15: validation lives in serializers; BRD s18).
+# The same rules are reused by admin.py, so the API and the Admin agree.
 from django.core.exceptions import ValidationError
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
 from .models import Customer
 
+
 # ==================================================
-# SHARED VALIDATION RULES (used by the API and by admin.py)
-# Plain string checks, no regular expressions.
+# SHARED VALIDATION RULES (BRD s18)
 # ==================================================
 
 DIGITS = "0123456789"
-PHONE_FORMATTING = " -()."
-MIN_PHONE_DIGITS = 10
-MAX_PHONE_DIGITS = 15
+PHONE_FORMATTING = " -()."   # allowed, but not counted as digits
+MIN_PHONE_DIGITS = 10        # BRD s18: minimum length 10 digits
+MAX_PHONE_DIGITS = 15        # international maximum
 
-# ===  ISP-1 / ISP-55    ===
-# Phone and email validation
+
 def clean_phone_number(value):
-    """Allow formatted numbers with 10-15 digits; return the trimmed value."""
+    """Accept formatted numbers with 10 to 15 digits; return the trimmed value."""
     value = (value or "").strip()
     digit_count = 0
     for position, character in enumerate(value):
         if character in DIGITS:
-            digit_count += 1                 # counts towards the length
+            digit_count += 1
         elif character == "+" and position == 0:
-            continue                         # "+" only as the first character
+            continue                         # + only as the first character
         elif character in PHONE_FORMATTING:
-            continue                         # spaces, dashes, brackets, dots
+            continue
         else:
-            # Letters or other symbols, e.g. "08212345ab".
             raise ValidationError(
                 "Phone number may only contain digits, spaces, brackets, "
                 "hyphens, dots and a leading +."
             )
-    # Judge the length on digits only, so formatting never changes the result.
+    # Count digits only, so formatting never changes the result.
     if not MIN_PHONE_DIGITS <= digit_count <= MAX_PHONE_DIGITS:
         raise ValidationError(
             f"Phone number must contain between {MIN_PHONE_DIGITS} "
@@ -49,15 +49,14 @@ def clean_name(value, label):
         raise ValidationError(f"{label} cannot be blank.")
     return value
 
-# ===  ISP-1 / ISP-54    ===
-# ==================================================
-# CUSTOMER SERIALIZER
-# ==================================================
 
+# ==================================================
+# CUSTOMER SERIALIZER (FR-03 create, FR-04 list)
+# ==================================================
 class CustomerSerializer(serializers.ModelSerializer):
     """Validates incoming JSON and formats Customer rows as JSON."""
 
-    # Read-only extra so clients need no second request for the agent's name.
+    # Read-only extra: the agent's name, so clients need no second request.
     assigned_agent_username = serializers.CharField(
         source="assigned_agent.username", read_only=True
     )
@@ -70,11 +69,11 @@ class CustomerSerializer(serializers.ModelSerializer):
             "created_at", "updated_at",
         ]
         # The server controls these. assigned_agent is set from the logged-in
-        # user in the ViewSet (perform_create), never from the client.
+        # user in views.py, so a client value is ignored (BRD s15).
         read_only_fields = ["customer_id", "assigned_agent", "created_at", "updated_at"]
         extra_kwargs = {
-            # Case-insensitive unique check: "A@X.com" clashes with "a@x.com".
-            # EmailField already rejects invalid addresses with a 400.
+            # BRD s18: a duplicate email returns 400, ignoring letter case.
+            # An invalid email format is already rejected by EmailField.
             "email": {
                 "validators": [
                     UniqueValidator(
@@ -86,8 +85,7 @@ class CustomerSerializer(serializers.ModelSerializer):
             },
         }
 
-    # DRF calls validate_<field> automatically; Django's ValidationError
-    # from the shared rules becomes a 400 with the message.
+    # DRF calls validate_<field> for each field.
     def validate_first_name(self, value):
         return clean_name(value, "First name")
 
@@ -98,5 +96,4 @@ class CustomerSerializer(serializers.ModelSerializer):
         return clean_phone_number(value)
 
     def validate_email(self, value):
-        # Runs after the unique check; store emails lowercase.
         return value.strip().lower()
