@@ -2,12 +2,13 @@ import os
 from pathlib import Path
 from celery.schedules import crontab, timedelta
 
+TIME_ZONE = 'Africa/Johannesburg'
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # ======================================================================
 # CELERY (background jobs)
 # ======================================================================
 CELERY_BROKER_URL = os.environ["CELERY_BROKER_URL"]
-CELERY_TIMEZONE = "Africa/Johannesburg"
+CELERY_TIMEZONE = TIME_ZONE
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "").split(",")
 CELERY_BEAT_SCHEDULE = {
     "check-expiring-subscriptions": {
@@ -42,14 +43,14 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.messages',      
+    'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_filters',
 # ===  OpenAPI schema generation and Swagger UI   ===
     'drf_spectacular',
 # ===  Helper App    ===
     'rest_framework',
-    "rest_framework.authtoken",                
+    "rest_framework.authtoken",
 # ===  Our Customers App    ===
     'customers',
 # ===  Our Packages App    ===
@@ -63,13 +64,13 @@ INSTALLED_APPS = [
 ]
 
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER':'api.exceptions.custom_exception_handler',
-    
-    'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
+    'EXCEPTION_HANDLER': 'api.exceptions.custom_exception_handler',
+
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
 
-    'DEFAULT_SCHEMA_CLASS':'drf_spectacular.openapi.AutoSchema',
-    
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         "rest_framework.filters.SearchFilter",
@@ -99,6 +100,7 @@ REST_FRAMEWORK = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',   # NEW: must sit above CommonMiddleware
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -169,8 +171,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
-
 USE_I18N = True
 
 USE_TZ = True
@@ -178,7 +178,13 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
-STATIC_URL = '/static/'
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"
+    }
+}
+STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
 # ======================================================================
@@ -213,4 +219,3 @@ SPECTACULAR_SETTINGS = {
         "AlertStatusEnum": "alerts.models.RenewalAlert.Status",
     },
 }
-

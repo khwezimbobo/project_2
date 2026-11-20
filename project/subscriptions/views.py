@@ -179,7 +179,6 @@ class SubscriptionViewSet(mixins.CreateModelMixin,     # POST /api/subscriptions
             filters.is_valid(raise_exception=True)   # 400 if a filter value is invalid
             # Only the filters that were actually given are applied.
             queryset = queryset.filter(**filters.validated_data)
-
         return queryset
 
     # @action adds an extra URL for ONE subscription: /api/subscriptions/{id}/status/

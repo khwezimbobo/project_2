@@ -10,6 +10,7 @@ logger = get_task_logger(__name__)
 
 ALERT_WINDOW_DAYS = 7
 
+
 @shared_task
 def check_expiring_subscriptions():
     """Create one renewal alert for each Active subscription ending within 7 days (BRD 14.1).
@@ -44,4 +45,5 @@ def check_expiring_subscriptions():
     logger.info(
         "check_expiring_subscriptions finished: %s alert(s) created, %s error(s)", created, errors
     )
+
     return {"created": created, "errors": errors}

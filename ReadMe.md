@@ -87,7 +87,15 @@ docker compose up --build
 
 The first build takes a few minutes. MySQL needs roughly 30 seconds to become healthy, and the other services wait for it. Add `-d` to run in the background.
 
-### 2.5 Create the database tables (in a second terminal)
+### 2.5 Collect static files 
+
+```
+docker exec -it django python manage.py collectstatic
+```
+
+This moves all CSS/JS from your static/ folder into the staticfiles folder that Nginx needs.
+
+### 2.6 Create the database tables (in a second terminal)
 
 ```
 docker compose exec django python manage.py migrate
@@ -100,7 +108,7 @@ Load the seed data (4 packages, 3 contract terms, 3 add-ons). It is safe to run 
 docker compose exec django python manage.py seed_data
 ```
 
-### 2.6 Check it works
+### 2.7 Check it works
 
 | What | Where |
 | --- | --- |

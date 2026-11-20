@@ -1,34 +1,36 @@
-# One image (built from ./project/Dockerfile) is reused by django, celery_worker and celery_beat.
+# Production-style stack: Gunicorn, no source code mounted, containers restart if they crash.
+# For development (runserver, live code reload) add the dev file:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
 x-django-base: &django-base
-  image: isp_backspace
+  image: isp_django
   build:
     context: ./project
     dockerfile: Dockerfile
-  volumes:
-    - ./project:/usr/src/app/
   env_file:
     - .env
+  restart: unless-stopped
+
 services:
   db:
     container_name: mysql
     image: mysql:8.4
-    restart: always
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
-    ports:
-      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:3-management
-    restart: always
+    restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
@@ -40,11 +42,15 @@ services:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+
   django:
     <<: *django-base
     container_name: django
-    command: python manage.py runserver 0.0.0.0:8000
+    # The entrypoint runs migrations, seed data and collectstatic first, then starts this.
+    command: ["gunicorn", "project.wsgi:application", "--bind", "0.0.0.0:8000", "--access-logfile", "-", "--error-logfile", "-"]
+    environment:
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-3}   # number of Gunicorn worker processes
     ports:
       - "8000:8000"
     depends_on:
@@ -52,24 +58,29 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    healthcheck:
+      # The public API docs page needs no login and is not throttled
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/api/docs/')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
   celery_worker:
     <<: *django-base
     container_name: celery_worker
     command: celery -A project worker -l info
     depends_on:
-      db:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      django:
+        condition: service_healthy   # the web container has finished migrating by then
+
   celery_beat:
     <<: *django-base
     container_name: celery_beat
-    # schedule file goes to /tmp so it doesn't appear in your project folder
+    # schedule file goes to /tmp so nothing is written into the app folder
     command: celery -A project beat -l info -s /tmp/celerybeat-schedule
     depends_on:
-      db:
-        condition: service_healthy
-      rabbitmq:
+      django:
         condition: service_healthy
 
 volumes:

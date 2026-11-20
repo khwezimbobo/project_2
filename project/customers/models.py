@@ -87,8 +87,7 @@ class Customer(models.Model):
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
 
-    # A string, because numbers can start with 0 or +.
-    # The 10-digit rule (BRD s18) is checked in serializers.py and admin.py.
+    # phone_number: a string, because numbers may start with 0 or "+".
     phone_number = models.CharField(max_length=20)
 
     # unique=True: the database itself refuses duplicates (BRD s18).
@@ -96,8 +95,8 @@ class Customer(models.Model):
 
     address = models.TextField()
 
-    # BRD s13: assigned_agent (FK to auth_user). Foreign keys are indexed
-    # automatically, which meets BRD s13.1 (index customers.assigned_agent).
+# ===  ISP-1 / ISP-23    ===
+    # assigned_agent (FK -> auth_user): the staff member responsible.
     assigned_agent = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,           # cannot delete an agent who owns customers
