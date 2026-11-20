@@ -149,4 +149,3 @@ class CreateSubscriptionApiTests(APITestCase):
         response = self.client.post("/api/subscriptions/", self.payload(), format="json")
         # 403 with session login today; 401 once JWT is the default (FR-16). Both mean "refused".
         self.assertIn(response.status_code, [status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN])
-        

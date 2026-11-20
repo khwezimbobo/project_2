@@ -130,8 +130,6 @@ SUBSCRIPTION_ID = OpenApiParameter("id", OpenApiTypes.UUID, OpenApiParameter.PAT
                    404: OpenApiResponse(description="Not found, or it belongs to another agent's customer.")},
     ),
 )
-
-
 class SubscriptionViewSet(mixins.CreateModelMixin,     # POST /api/subscriptions/
                           mixins.ListModelMixin,       # GET  /api/subscriptions/
                           mixins.RetrieveModelMixin,   # GET  /api/subscriptions/{id}/
@@ -181,7 +179,6 @@ class SubscriptionViewSet(mixins.CreateModelMixin,     # POST /api/subscriptions
             filters.is_valid(raise_exception=True)   # 400 if a filter value is invalid
             # Only the filters that were actually given are applied.
             queryset = queryset.filter(**filters.validated_data)
-
         return queryset
 
     # @action adds an extra URL for ONE subscription: /api/subscriptions/{id}/status/
@@ -216,4 +213,3 @@ class SubscriptionViewSet(mixins.CreateModelMixin,     # POST /api/subscriptions
         logs = subscription.audit_logs.select_related("changed_by").order_by("-timestamp")
         page = self.paginate_queryset(logs)   # 20 per page, like every list
         return self.get_paginated_response(AuditLogSerializer(page, many=True).data)
-    

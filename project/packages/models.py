@@ -9,13 +9,18 @@ from django.db import models
 class Package(models.Model):
     """An internet package the ISP sells."""
 
-
-    package_id = models.AutoField(primary_key=True)                                 # Primary key named to match the BRD data model.
-    name = models.CharField(max_length=100, unique=True)                            # Unique so no two packages share a name; seed_data also uses it to find existing rows.
-    monthly_rate = models.DecimalField(max_digits=10, decimal_places=2)             # Money is stored as an exact Decimal to avoid rounding errors in pricing.
+    # Primary key named to match the BRD data model.
+    package_id = models.AutoField(primary_key=True)
+    # Unique so no two packages share a name; seed_data also uses it to find existing rows.
+    name = models.CharField(max_length=100, unique=True)
+    # Money is stored as an exact Decimal to avoid rounding errors in pricing.
+    monthly_rate = models.DecimalField(max_digits=10, decimal_places=2)
     speed_mbps = models.PositiveIntegerField()                                      # Line speed in Mbps.
-    description = models.TextField(blank=True)                                      # Added marketing text; blank=True allows it to be left empty.
-    is_active = models.BooleanField(default=True)                                   # Soft on/off switch: inactive packages are hidden from the API but kept so existing subscriptions that use them are not broken.
+    # Added marketing text; blank=True allows it to be left empty.
+    description = models.TextField(blank=True)
+    # Soft on/off switch: inactive packages are hidden from the API but kept,
+    # so existing subscriptions that use them are not broken.
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         db_table = "packages"               # Table name matches the BRD.
@@ -40,7 +45,7 @@ class ContractTerm(models.Model):
 
     class Meta:
         db_table = "contract_terms"
-        ordering = ["duration_days"]       #Shortest contract first.
+        ordering = ["duration_days"]  # Shortest contract first.
 
     def __str__(self):
         return self.name
@@ -51,7 +56,8 @@ class AddOn(models.Model):
 
     add_on_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=100, unique=True)
-    monthly_rate = models.DecimalField(max_digits=10, decimal_places=2)             # Added to the subtotal for each add-on the customer selects.
+    # Added to the subtotal for each add-on the customer selects.
+    monthly_rate = models.DecimalField(max_digits=10, decimal_places=2)
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
 

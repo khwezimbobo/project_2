@@ -115,4 +115,3 @@ class ContractDateTests(SimpleTestCase):
         # "_" means we don't need the start date in this test.
         _, end = calculate_contract_dates(date(2026, 11, 1), 730)
         self.assertEqual(end, date(2028, 10, 31))
-        

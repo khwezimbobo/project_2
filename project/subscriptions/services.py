@@ -176,10 +176,7 @@ def create_subscription(*, customer, package, contract_term, add_ons, installati
     return subscription
 
 
-
-
 # --- Changing status (BRD 8.1, 18; FR-08, FR-09) ------------------------------
-
 # Which statuses each status may move to. Cancelled is final: nothing leaves it.
 ALLOWED_TRANSITIONS = {
     SubscriptionStatus.PENDING: {SubscriptionStatus.ACTIVE, SubscriptionStatus.CANCELLED},

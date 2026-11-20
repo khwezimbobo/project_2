@@ -10,7 +10,7 @@ MONEY = {"max_digits": 10, "decimal_places": 2}
 
 class SubscriptionStatus(models.TextChoices):
     """The only allowed subscription statuses (BRD 8.1).
-    Imported this everywhere instead of typing "Active" etc. by hand."""
+    Import this everywhere instead of typing "Active" etc. by hand."""
     PENDING = "Pending", "Pending"
     ACTIVE = "Active", "Active"
     SUSPENDED = "Suspended", "Suspended"
@@ -21,11 +21,13 @@ class Subscription(models.Model):
     """A customer's internet subscription, with the full pricing breakdown
     stored at the moment it was created (BRD 13)."""
 
-    subscription_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)        # UUID so IDs can't be guessed by changing a number in the URL.
+    # UUID so IDs can't be guessed by changing a number in the URL.
+    subscription_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 
     # Links to other apps use "app.Model" strings to avoid circular imports.
+    # PROTECT: a customer/package/term can't be deleted while a subscription uses it.
     customer = models.ForeignKey(
-        "customers.Customer", on_delete=models.PROTECT, related_name="subscriptions"                # PROTECT: a customer/package/term can't be deleted while a subscription uses it.
+        "customers.Customer", on_delete=models.PROTECT, related_name="subscriptions"
     )
     package = models.ForeignKey(
         "packages.Package", on_delete=models.PROTECT, related_name="subscriptions"
@@ -69,8 +71,8 @@ class Subscription(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="subscriptions_created"
     )
 
-    created_at = models.DateTimeField(auto_now_add=True)        # Timestamp of creation, set once and never changed.
-    updated_at = models.DateTimeField(auto_now=True)            # Timestamp of last update, set automatically whenever the row is saved.
+    created_at = models.DateTimeField(auto_now_add=True)        # Set once, when the row is created.
+    updated_at = models.DateTimeField(auto_now=True)            # Updated automatically on every save.
 
     class Meta:
         db_table = "subscriptions"
@@ -89,10 +91,11 @@ class SubscriptionAddOn(models.Model):
 
     # CASCADE: deleting a subscription deletes its add-on rows too.
     subscription = models.ForeignKey(
-        Subscription, on_delete=models.CASCADE, related_name="subscription_add_ons"         # PROTECT: a subscription can't be deleted while an add-on row uses it.
+        Subscription, on_delete=models.CASCADE, related_name="subscription_add_ons"
     )
 
-    add_on = models.ForeignKey("packages.AddOn", on_delete=models.PROTECT)                  # PROTECT: an add-on can't be deleted while a subscription uses it.
+    # PROTECT: an add-on can't be deleted while a subscription uses it.
+    add_on = models.ForeignKey("packages.AddOn", on_delete=models.PROTECT)
 
     # Copy of the rate at sign-up, so later price changes don't alter old subscriptions.
     monthly_rate = models.DecimalField(**MONEY)
