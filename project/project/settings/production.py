@@ -1,4 +1,7 @@
+import os
 from .base import *
+from .base import BASE_DIR
+
 
 DEBUG = False
 
@@ -18,12 +21,12 @@ CSRF_TRUSTED_ORIGINS = [
 # SECURITY
 # ----------------------------------------------------------------------
 
-SECURE_SSL_REDIRECT = True
+SECURE_SSL_REDIRECT = False
 
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = False
 
-SECURE_HSTS_SECONDS = 31536000
+SECURE_HSTS_SECONDS = 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 

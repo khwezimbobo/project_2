@@ -1,0 +1,96 @@
+x-django-base: &django-base
+  image: isp_backspace:production
+  build:
+    context: ./project
+    dockerfile: Dockerfile
+  env_file:
+    - .env
+  environment:
+    DJANGO_SETTINGS_MODULE: project.settings.production
+
+services:
+  db:
+    container_name: mysql
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    container_name: rabbitmq
+    image: rabbitmq:3-management
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  django:
+    <<: *django-base
+    container_name: django
+    command:
+      [
+        "gunicorn",
+        "project.wsgi:application",
+        "--bind",
+        "0.0.0.0:8000",
+        "--access-logfile",
+        "-",
+        "--error-logfile",
+        "-"
+      ]
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  celery_worker:
+    <<: *django-base
+    container_name: celery_worker
+    command: ["celery", "-A", "project", "worker", "-l", "info"]
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  celery_beat:
+    <<: *django-base
+    container_name: celery_beat
+    command:
+      [
+        "celery",
+        "-A",
+        "project",
+        "beat",
+        "-l",
+        "info",
+        "-s",
+        "/tmp/celerybeat-schedule"
+      ]
+    depends_on:
+      db:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+  rabbitmq_data:
