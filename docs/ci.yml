@@ -1,0 +1,61 @@
+# FIX 1: CI pipeline (BRD 16.2, TC-10)
+# Save as .github/workflows/ci.yml at the REPOSITORY ROOT (folder names are exact).
+#
+# If manage.py is inside a sub-folder (e.g. project/), uncomment the "defaults" block
+# and set working-directory to that folder.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    # defaults:
+    #   run:
+    #     working-directory: project
+
+    env:
+      # CI uses SQLite test settings (BRD 16.2 step 5), so no MySQL or RabbitMQ is needed.
+      # Dummy values below only stop settings from crashing if they read env vars on import.
+      DJANGO_SETTINGS_MODULE: project.settings.test   # change to config.settings.test if you rename the package
+      SECRET_KEY: ci-only-not-a-real-secret
+      DB_NAME: ci
+      DB_USER: ci
+      DB_PASSWORD: ci
+      DB_HOST: localhost
+      DB_PORT: "3306"
+      CELERY_BROKER_URL: memory://
+
+    steps:
+      # Step 1: get the code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Step 2: Python 3.11 (BRD 16.2)
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: "**/requirements.txt"
+
+      # mysqlclient compiles against these headers; harmless if already present
+      - name: System packages for mysqlclient
+        run: sudo apt-get update && sudo apt-get install -y libmysqlclient-dev pkg-config
+
+      # Step 3: install dependencies
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Step 4: lint (exact command from the BRD)
+      - name: Lint with flake8
+        run: flake8 . --max-line-length 120 --exclude migrations
+
+      # Step 5: tests on SQLite (exact command from the BRD)
+      - name: Run tests
+        run: pytest --ds=project.settings.test -v

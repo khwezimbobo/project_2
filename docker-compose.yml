@@ -1,4 +1,5 @@
-# One image (built from ./project/Dockerfile) is reused by django, celery_worker and celery_beat.
+
+# Shared configuration for Django and Celery services
 x-django-base: &django-base
   image: isp_backspace
   build:
@@ -8,7 +9,10 @@ x-django-base: &django-base
     - ./project:/usr/src/app/
   env_file:
     - .env
+
 services:
+
+  # MySQL database
   db:
     container_name: mysql
     image: mysql:8.4
@@ -25,6 +29,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # RabbitMQ message broker
   rabbitmq:
     container_name: rabbitmq
     image: rabbitmq:3-management
@@ -33,18 +39,22 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
     ports:
-      - "15672:15672"   # management UI (the broker's own port 5672 stays internal)
+      - "15672:15672"
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
-      timeout: 5s
-      retries: 5
-  django:
+      timeout: 10s
+      retries: 10
+
+  # Django application served by Gunicorn
+  web:
     <<: *django-base
-    container_name: django
-    command: python manage.py runserver 0.0.0.0:8000
+    container_name: web
+    command: gunicorn project.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    environment:
+      RUN_SETUP: "1"
     ports:
       - "8000:8000"
     depends_on:
@@ -52,24 +62,37 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/docs/')"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Celery background task worker
   celery_worker:
     <<: *django-base
     container_name: celery_worker
-    command: celery -A project worker -l info
+    command: celery -A project worker -l INFO
     depends_on:
       db:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      web:
+        condition: service_healthy
+
+  # Celery scheduled task service
   celery_beat:
     <<: *django-base
     container_name: celery_beat
-    # schedule file goes to /tmp so it doesn't appear in your project folder
-    command: celery -A project beat -l info -s /tmp/celerybeat-schedule
+    command: celery -A project beat -l INFO -s /tmp/celerybeat-schedule
     depends_on:
       db:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+      web:
         condition: service_healthy
 
 volumes:

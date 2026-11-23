@@ -20,3 +20,4 @@ RUN chmod +x /usr/src/app/entrypoint.sh
 COPY . /usr/src/app/
 
 ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
+CMD ["gunicorn", "project.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
