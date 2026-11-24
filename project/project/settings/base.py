@@ -91,14 +91,18 @@ REST_FRAMEWORK = {
         'anon': '20/hour',
         'user': '1000/day',
     },
-    'SIMPLE_JWT': {
-        'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-        'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    }
+}
+
+# JWT lifetimes (BRD: access 60 min, refresh 7 days). This must be its own setting:
+# inside REST_FRAMEWORK it is ignored and simplejwt falls back to 5-minute tokens.
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
 }
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',   # serves /static/ (Admin, Swagger) under Gunicorn
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',   # NEW: must sit above CommonMiddleware
     'django.middleware.common.CommonMiddleware',
