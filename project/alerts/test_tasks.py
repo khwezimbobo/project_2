@@ -24,7 +24,8 @@ class CheckExpiringSubscriptionsTests(TestCase):
         cls.today = timezone.localdate()
         cls.agent = User.objects.create_user("agent", password="pw", role="agent")
         cls.customer = Customer.objects.create(
-            first_name="Thandi", email="t@x.co", phone_number="0821234567", address="1 Long St", assigned_agent=cls.agent
+            first_name="Thandi", email="t@x.co", phone_number="0821234567",
+            address="1 Long St", assigned_agent=cls.agent,
         )
         cls.package = Package.objects.get(name="Home Basic")
         cls.term = ContractTerm.objects.get(name="12-Month")
