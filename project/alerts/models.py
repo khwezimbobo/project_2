@@ -3,6 +3,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 
+
 class RenewalAlert(models.Model):
     class Status(models.TextChoices):
         PENDING = "Pending"

@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
-from celery.schedules import crontab, timedelta
+from datetime import timedelta
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # ======================================================================
@@ -42,34 +43,34 @@ INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
-    'django.contrib.messages',      
+    'django.contrib.messages',
     'django.contrib.staticfiles',
     'django_filters',
-# ===  OpenAPI schema generation and Swagger UI   ===
+    # ===  OpenAPI schema generation and Swagger UI   ===
     'drf_spectacular',
-# ===  Helper App    ===
+    # ===  Helper App    ===
     'rest_framework',
-    "rest_framework.authtoken",                
-# ===  Our Customers App    ===
+    "rest_framework.authtoken",
+    # ===  Our Customers App    ===
     'customers',
-# ===  Our Packages App    ===
+    # ===  Our Packages App    ===
     'packages',
-# ===  Our Subscriptions App    ===
+    # ===  Our Subscriptions App    ===
     'subscriptions',
-# ===  Our Alerts App    ===
+    # ===  Our Alerts App    ===
     'alerts',
-# ===  Our Reports App    ===
+    # ===  Our Reports App    ===
     'reports',
 ]
 
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER':'api.exceptions.custom_exception_handler',
-    
-    'DEFAULT_PAGINATION_CLASS':'rest_framework.pagination.PageNumberPagination',
+    'EXCEPTION_HANDLER': 'api.exceptions.custom_exception_handler',
+
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
 
-    'DEFAULT_SCHEMA_CLASS':'drf_spectacular.openapi.AutoSchema',
-    
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
     'DEFAULT_FILTER_BACKENDS': [
         'django_filters.rest_framework.DjangoFilterBackend',
         "rest_framework.filters.SearchFilter",
@@ -178,7 +179,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
+# Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
+
+# Directory where collectstatic gathers all static files
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
 # ======================================================================
@@ -213,4 +218,3 @@ SPECTACULAR_SETTINGS = {
         "AlertStatusEnum": "alerts.models.RenewalAlert.Status",
     },
 }
-

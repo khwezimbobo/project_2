@@ -34,5 +34,8 @@ CORS_ALLOWED_ORIGINS = ["http://localhost:3000"]
 
 # Emails are captured in memory so the password-reset test can read them.
 EMAILERS = {"default": {"BACKEND": "django.core.mail.backends.locmem.EmailBackend"}}
-# Celery tasks run immediately instead of waiting for a worker.
+# Celery tasks run immediately instead of waiting for a worker. : no RabbitMQ needed (BRD 10 Testability)
 CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+CELERY_BROKER_URL = "memory://"
+CELERY_RESULT_BACKEND = "cache+memory://"

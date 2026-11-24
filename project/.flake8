@@ -1,6 +1,7 @@
+# flake8 configuration for the whole team (BRD 16.2 uses max-line-length 120).
 [flake8]
-max-line-length = 100
-exclude = migrations,__pycache__
+max-line-length = 120
+exclude = migrations,.git,__pycache__,venv,.venv,env,.env,staticfiles
 per-file-ignores =
     project/settings/development.py: F401,F403,W292
     project/settings/test.py: F401,F403,E402
