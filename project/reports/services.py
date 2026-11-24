@@ -10,6 +10,7 @@ from subscriptions.models import SubscriptionStatus, Subscription
 
 EXPIRY_WINDOW_DAYS = 30
 
+
 def expiring_subscriptions(today=None):
     """Active subscriptions ending within the next 30 days, soonest first.
 
