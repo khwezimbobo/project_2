@@ -10,14 +10,12 @@ jobs:
   lint-and-test:
     runs-on: ubuntu-latest
 
-     defaults:
-       run:
-         working-directory: project
+    defaults:
+      run:
+        working-directory: project
 
     env:
-      # CI uses SQLite test settings (BRD 16.2 step 5), so no MySQL or RabbitMQ is needed.
-      # Dummy values below only stop settings from crashing if they read env vars on import.
-      DJANGO_SETTINGS_MODULE: project.settings.test   # change to config.settings.test if you rename the package
+      DJANGO_SETTINGS_MODULE: project.settings.test
       SECRET_KEY: ci-only-not-a-real-secret
       DB_NAME: ci
       DB_USER: ci
@@ -27,11 +25,9 @@ jobs:
       CELERY_BROKER_URL: memory://
 
     steps:
-      # Step 1: get the code
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Step 2: Python 3.12 (BRD 16.2)
       - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
@@ -39,18 +35,14 @@ jobs:
           cache: pip
           cache-dependency-path: "**/requirements.txt"
 
-      # mysqlclient compiles against these headers; harmless if already present
       - name: System packages for mysqlclient
         run: sudo apt-get update && sudo apt-get install -y libmysqlclient-dev pkg-config
 
-      # Step 3: install dependencies
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # Step 4: lint (exact command from the BRD)
       - name: Lint with flake8
         run: flake8 . --max-line-length 120 --exclude migrations
 
-      # Step 5: tests on SQLite (exact command from the BRD)
       - name: Run tests
         run: pytest --ds=project.settings.test -v
