@@ -166,7 +166,7 @@ docker compose exec web python manage.py shell -c "from alerts.tasks import chec
 
 - Sprint board: [`docs/sprint_board.md`](docs/sprint_board.md)
 - ERD and indexes: [`docs/erd.md`](docs/erd.md)
-- Architecture diagram: [`docs/architecture.md`](docs/architecture.md)
+- Architecture diagram: [`docs/Architecture.md`](docs/Architecture.md)
 - Demo evidence: [`docs/demo/`](docs/demo/)
 
 ## 8. Troubleshooting
