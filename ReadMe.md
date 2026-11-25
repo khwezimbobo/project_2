@@ -19,7 +19,7 @@ drf-spectacular (Swagger), pytest-django, flake8, Docker Compose, GitHub Actions
   R500 installation fee); contract end dates are calculated from the term. Client-sent values are ignored.
 - Status rules: Pending, Active, Suspended or Cancelled; a Cancelled subscription cannot be reactivated;
   every change is written to an audit log
-- Agents can only reach their own customers (checked in `get_queryset()`); another agent's record returns 403
+- Agents can only reach their own customers and subscriptions. Another agent's customer returns 403 (BRD s18, TC-04); another agent's subscription returns 404.
 - Two daily Celery tasks: renewal alerts (07:00) and auto-suspension after the 30-day grace period (07:15)
 - Staff dashboard at `/dashboard/` and Swagger documentation at `/api/docs/`
 
@@ -71,7 +71,7 @@ docker compose up -d --build
 docker compose ps
 ```
 
-All five services should be running: `mysql`, `rabbitmq`, `web` (healthy), `celery_worker` and `celery_beat`.
+All five containers should be running: `mysql`, `rabbitmq`, `web` (healthy), `celery_worker` and `celery_beat`.
 On startup the `web` service waits for MySQL, applies migrations, loads the seed data, collects static files
 and starts Gunicorn. No manual steps are needed.
 
@@ -127,8 +127,7 @@ CI (GitHub Actions) runs the same flake8 and pytest commands on every push and p
 
 1. Open http://localhost:8000/api/docs/
 2. Run `POST /api/auth/token/` with your username and password and copy the `access` token.
-3. Click **Authorize** and paste the token (Swagger adds the `Bearer` prefix for you if the scheme asks for
-   a token only; otherwise enter `Bearer <token>`).
+3. Click **Authorize** and paste only the access token.
 4. Try any endpoint. When the access token expires (60 minutes), use `POST /api/auth/token/refresh/`.
 
 Every endpoint except the token routes and the docs requires a valid token. Missing or expired tokens return 401.
@@ -157,8 +156,11 @@ Every endpoint except the token routes and the docs requires a valid token. Miss
 | `subscriptions.tasks.auto_suspend_overdue_subscriptions` | daily 07:15 | Suspends Active subscriptions more than 30 days past their end date and writes an audit log entry |
 
 Watch the worker: `docker compose logs -f celery_worker`. Queues are visible in the RabbitMQ UI
-(http://localhost:15672). To run a task by hand, open a shell with
-`docker compose exec web python manage.py shell` and call `check_expiring_subscriptions.delay()`.
+(http://localhost:15672). To run the renewal-alert task by hand:
+
+```bash
+docker compose exec web python manage.py shell -c "from alerts.tasks import check_expiring_subscriptions; check_expiring_subscriptions.delay()"
+```
 
 ## 7. Documentation
 
@@ -175,6 +177,7 @@ Watch the worker: `docker compose logs -f celery_worker`. Queues are visible in 
 | `service "web" is not running` | Run `docker compose up -d --build`, then `docker compose logs web` to see why it stopped |
 | `entrypoint.sh: not found` | Windows line endings. Run `git add --renormalize .` and rebuild (`.gitattributes` forces LF for `.sh` files) |
 | Migration or database errors after pulling changes | Full reset: `docker compose down -v`, then `docker compose up -d --build` |
+| `network ... still in use` when stopping | Remove leftover containers: `docker compose down --remove-orphans` |
 | API returns 403 for a new superuser | Give the user the `admin` role (see section 2) |
 
 ## 9. Assumptions
