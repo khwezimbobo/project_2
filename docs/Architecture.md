@@ -12,7 +12,7 @@ flowchart LR
     end
 
     subgraph compose["Docker Compose stack"]
-        subgraph web["django container: Gunicorn + WhiteNoise, port 8000"]
+        subgraph web["web container: Gunicorn + WhiteNoise, port 8000"]
             pages["HTML pages<br/>/admin/  /dashboard/  /accounts/"]
             api["REST API under /api/<br/>customers, packages, subscriptions,<br/>alerts, reports, auth/token"]
             docs["Swagger docs<br/>/api/docs/  /api/schema/"]
@@ -93,11 +93,11 @@ sequenceDiagram
 
 | Container | Image | Port | Job |
 | --- | --- | --- | --- |
-| `django` | built from `project/Dockerfile` | 8000 | Gunicorn runs the Django app. On start it migrates, loads seed data on first run, and collects static files. |
+| `web` | built from `project/Dockerfile` | 8000 | Gunicorn runs the Django app. On start it migrates, loads seed data on first run, and collects static files. |
 | `mysql` | `mysql:8.4` | none (3307 in dev) | All application data, stored in the `mysql_data` volume. |
 | `rabbitmq` | `rabbitmq:3-management` | 15672 (UI) | Message broker. The `celery` queue carries task messages. |
-| `celery_worker` | same image as `django` | none | Runs `alerts.tasks.check_expiring_subscriptions` and `subscriptions.tasks.auto_suspend_overdue_subscriptions`. |
-| `celery_beat` | same image as `django` | none | Sends those two tasks to RabbitMQ on the schedule in settings (South African time). |
+| `celery_worker` | same image as `web` | none | Runs `alerts.tasks.check_expiring_subscriptions` and `subscriptions.tasks.auto_suspend_overdue_subscriptions`. |
+| `celery_beat` | same image as `web` | none | Sends those two tasks to RabbitMQ on the schedule in settings (South African time). |
 
 ## 5. How the code is organised
 
