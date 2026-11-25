@@ -19,13 +19,13 @@ A story is Done when all of these are true:
 
 | Epic | Name | Scope |
 |------|------|-------|
-| E1 | Project Setup & Data Model | Repo, Django skeleton, models, migrations, seed data, Django Admin. (Module 2) |
-| E2 | Customers & Security | Customer API, JWT, roles, IDOR prevention, throttling, error handling. (Modules 3, 6) |
-| E3 | Subscriptions & Pricing | Packages API, PricingService, subscriptions, status transitions, audit log, Swagger. (Module 3) |
-| E4 | Async Processing | Celery, RabbitMQ, renewal alerts, auto-suspension, beat schedule. (Module 8) |
-| E5 | Reports & Dashboard | Raw SQL revenue report, expiring report, MTV dashboard. (Modules 2, 4) |
-| E6 | DevOps | Docker Compose (5 services), Gunicorn, GitHub Actions CI. (Module 7) |
-| E7 | Documentation & Submission | ERD, architecture diagram, README, sprint board, demo evidence. (Module 5) |
+| E1 | Project Setup & Data Model | Repo, Django skeleton, models, migrations, seed data, Django Admin. (Module 2) | ✅ Done |
+| E2 | Customers & Security | Customer API, JWT, roles, IDOR prevention, throttling, error handling. (Modules 3, 6) | ✅ Done |
+| E3 | Subscriptions & Pricing | Packages API, PricingService, subscriptions, status transitions, audit log, Swagger. (Module 3) | ✅ Done |
+| E4 | Async Processing | Celery, RabbitMQ, renewal alerts, auto-suspension, beat schedule. (Module 8) | ✅ Done |
+| E5 | Reports & Dashboard | Raw SQL revenue report, expiring report, MTV dashboard. (Modules 2, 4) | ✅ Done |
+| E6 | DevOps | Docker Compose (5 services), Gunicorn, GitHub Actions CI. (Module 7) | ✅ Done |
+| E7 | Documentation & Submission | ERD, architecture diagram, README, sprint board, demo evidence. (Module 5) | ✅ Done |
 
 ## Summary
 
@@ -527,7 +527,7 @@ Status on 23 November 2026: 30 of 38 stories Done (94 of 117 points).
 | ISP-35 | Architecture diagram | Documentation & Submission | Cassidy | 2 | ✅ Done |
 | ISP-36 | README and final sprint board | Documentation & Submission | Siseko | 2 | ✅ Done ||
 | ISP-37 | Demo evidence | Documentation & Submission | Cassidy | 3 | ✅ Done |
-| ISP-38 | Cross-testing and bug fixes | Documentation & Submission | Khwezi | 2 | 🟡 In Progress |
+| ISP-38 | Cross-testing and bug fixes | Documentation & Submission | Khwezi | 2 |✅ Done |
 
 ### ISP-34: Final ERD and indexing documentation
 
@@ -557,7 +557,7 @@ Status on 23 November 2026: 30 of 38 stories Done (94 of 117 points).
 
 *As a new developer, I want clear setup steps so that I can run the project in minutes.*
 
-**Owner:** Siseko | **Points:** 2 | **Status:** 🟡 In Progress | **BRD:** BRD 17
+**Owner:** Siseko | **Points:** 2 | **Status:** ✅ Done | **BRD:** BRD 17
 
 **Acceptance criteria**
 
@@ -579,7 +579,7 @@ Status on 23 November 2026: 30 of 38 stories Done (94 of 117 points).
 
 *As the team, we want each member to test someone else's area so that we find bugs before the assessor does.*
 
-**Owner:** Khwezi | **Points:** 2 | **Status:** 🟡 In Progress | **BRD:** BRD 21
+**Owner:** Khwezi | **Points:** 2 | **Status:** ✅ Done | **BRD:** BRD 21
 
 **Acceptance criteria**
 
